@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Travist</string>
+    <string name="home_page_title">Bienvenue Utilisateur</string>
+    <string name="no_travel_text">Vous n\'avez aucun trajet planifié</string>
+    <string name="planify_btn_text">Planifier un nouveau trajet</string>
+    <string name="travel_name">Entrez le nom de votre voyage</string>
+    <string name="select_country_text">Où voulez-vous aller ?</string>
+    <string name="budget">Budget total actuel pour ce voyage :</string>
+    <string name="traveler_count_label">Nombre de voyageur :</string>
+    <string name="traveler">Voyageur</string>
+    <string name="age">Âge :</string>
+    <string name="disease">Handicap :</string>
+    <string name="yes">Oui</string>
+    <string name="no">Non</string>
+    <string name="save">Enregistrer</string>
+</resources>
