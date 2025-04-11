@@ -103,29 +103,57 @@
                     android:layout_width="match_parent"
                     android:layout_height="15dp"></Space>
 
-                <EditText
-                    android:id="@+id/editTextText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ems="10"
-                    android:inputType="text"
-                    android:text="Nom du voyage" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
 
-                <EditText
-                    android:id="@+id/editTextText2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ems="10"
-                    android:inputType="text"
-                    android:text="Nombre de voyageurs" />
+                    <TextView
+                        android:id="@+id/textView4"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Nom du voyage : "
+                        android:textColor="#dddefa"
+                        android:fontFamily="sans-serif-condensed"
+                        android:textSize="18dp" />
+
+                    <EditText
+                        android:id="@+id/editTextText"
+                        android:layout_width="250dp"
+                        android:layout_height="wrap_content"
+                        android:textColor="#fafafa"
+                        android:ems="10"
+                        android:inputType="text" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/textView4"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Nombre de voyageurs : "
+                        android:textColor="#dddefa"
+                        android:fontFamily="sans-serif-condensed"
+                        android:textSize="18dp" />
+
+                    <EditText
+                        android:id="@+id/editTextText"
+                        android:layout_width="250dp"
+                        android:layout_height="wrap_content"
+                        android:textColor="#fafafa"
+                        android:ems="10"
+                        android:inputType="text" />
+
+                </LinearLayout>
 
                 <Space
                     android:layout_width="match_parent"
                     android:layout_height="15dp" />
-
-                <Space
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
