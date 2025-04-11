@@ -51,8 +51,9 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this,"Mauvaise saisie",Toast.LENGTH_LONG).show();
             return;
         }
-        String url="http://192.168.0.110/~mathys.raspolini/travist/public/api/login";
-        StringRequest req =new StringRequest(Request.Method.POST,url,this::processLoginRequest,this::handleErrors){
+        // String url="http://192.168.0.110/~mathys.raspolini/travist/public/api/login";
+        String url="http://10.0.2.2/www/PPE_Travist/travist/public/api/login";
+        StringRequest req = new StringRequest(Request.Method.POST,url,this::processLoginRequest,this::handleErrors){
             @Nullable
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
