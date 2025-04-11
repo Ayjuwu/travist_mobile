@@ -3,11 +3,16 @@ package com.example.travist;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
@@ -15,16 +20,23 @@ import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Profile extends AppCompatActivity {
     RequestQueue rq;
     String token;
-    Button loginBtn;
+    Button planifyBtn;
+
+    RecyclerView recyclerView;
+    TravelAdapter adapter;
+    List<Travel> travelList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,8 +46,17 @@ public class Profile extends AppCompatActivity {
         Intent i = getIntent();
         token = i.getStringExtra("token");
         Log.i("HELLOJWT", "token " + token);
+        recyclerView = findViewById(R.id.recyclerView);
 
         this.requestDetails();
+        planifyBtn = findViewById(R.id.planifyTravelBtn);
+        planifyBtn.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View view) {
+                Intent intent = new Intent(Profile.this, PlanifyActivity.class);
+                intent.putExtra("token", token);
+                startActivity(intent);
+            }
+        });
     }
 
     public void requestDetails() {
@@ -49,21 +70,85 @@ public class Profile extends AppCompatActivity {
                 return params;
             }
         };
+
         rq.add(req);
     }
 
     public void processDetails(String response) {
         try {
             JSONObject joData = new JSONObject(response).getJSONObject("data").getJSONObject("profile").getJSONObject("data");
+
             TextView tvPs;
+
             tvPs = findViewById(R.id.tvPseudo);
             tvPs.setText(joData.getString("user_name"));
+
+            int user_id = joData.getInt("id");
+
+            String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTravelsByUser/" + user_id;
+            StringRequest req = new StringRequest(Request.Method.GET, url, this::processUserTravels, this::handleErrors) {
+                public Map<String, String> getHeaders() throws AuthFailureError {
+                    return new HashMap<String, String>();
+                }
+            };
+
+            rq.add(req);
         } catch (JSONException x) {
             Toast.makeText(this, "JSON PARSE ERROR", Toast.LENGTH_LONG).show();
             Log.e("HELLOJWT", "JSON PARSE ERROR: " + response, x);
         }
-
     }
+
+    public void processUserTravels(String response) {
+        try {
+            JSONArray jsonArray = new JSONArray(response);
+
+            TextView tvNoTravel = findViewById(R.id.noTravelTextView);
+            ImageView ivNoTravel = findViewById(R.id.noTravelImageView);
+
+            if(jsonArray.length() == 0) {
+                tvNoTravel.setText("Vous n'avez aucun trajet planifié");
+                ivNoTravel.setImageResource(R.drawable.no_travel_icon);
+
+                ViewGroup.LayoutParams params = ivNoTravel.getLayoutParams();
+                params.width = 600;
+                params.height = 400;
+
+                ivNoTravel.setLayoutParams(params);
+            } else {
+                // On vide la liste au cas où il y aurait déjà des données
+                travelList.clear();
+
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject travel = jsonArray.getJSONObject(i);
+
+                    // Extraction des informations du voyage depuis le JSON.
+                    int id = travel.getInt("id");
+                    String travelName = travel.getString("travel_name");
+                    int peopleNumber = travel.getInt("people_number");
+                    float individualPrice = (float) travel.getDouble("individual_price");
+                    float totalPrice = (float) travel.getDouble("total_price");
+                    String startDate = travel.getString("travel_start_date");
+                    String endDate = travel.getString("travel_end_date");
+                    int userId = travel.getInt("user_id");
+
+                    Travel t = new Travel(id, travelName, peopleNumber, individualPrice, totalPrice, startDate, endDate, userId);
+                    travelList.add(t);
+                }
+
+                // Mettre à jour la RecyclerView sur le thread principal (mieux que thread de fond).
+                runOnUiThread(() -> {
+                    adapter = new TravelAdapter(travelList);
+                    recyclerView.setLayoutManager(new LinearLayoutManager(this));
+                    recyclerView.setAdapter(adapter);
+                });
+            }
+        } catch (JSONException e) {
+            Toast.makeText(this, "JSON PARSE ERROR", Toast.LENGTH_LONG).show();
+            Log.e("HELLOJWT", "JSON PARSE ERROR: " + response, e);
+        }
+    }
+
 
     public void handleErrors(Throwable t) {
         Toast.makeText(this, "SERVERSIDE PROBLEM", Toast.LENGTH_LONG).show();
