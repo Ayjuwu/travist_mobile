@@ -32,7 +32,10 @@ import java.util.Map;
 
 public class KeypointDetailsActivity extends AppCompatActivity {
     RequestQueue rq;
+    String token;
     private Button addToListBtn;
+    // Stocke le keypoint chargé depuis l'API
+    private Keypoint currentKeypoint;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +50,7 @@ public class KeypointDetailsActivity extends AppCompatActivity {
         });
 
         rq = Volley.newRequestQueue(this);
+        token = getIntent().getStringExtra("token");
         int kpId = getIntent().getIntExtra("kpId", -1);
 
         // Appel des détails
@@ -55,13 +59,20 @@ public class KeypointDetailsActivity extends AppCompatActivity {
         // Bouton d’ajout à la liste globale
         addToListBtn = findViewById(R.id.addToList);
         addToListBtn.setOnClickListener(view -> {
-            KpListHolder.kpListId.add(kpId);  // Ajout dans singleton
-            Log.d("KPLIST", "Ajouté : " + kpId + " -> Liste actuelle : " + KpListHolder.kpListId);
+            if (currentKeypoint != null) {
+                // Ajout du keypoint complet dans le singleton
+                KpListHolder.addKeypoint(currentKeypoint);
+                Log.d("KPLIST", "Ajouté : " + currentKeypoint.id + " -> Liste actuelle : " + KpListHolder.selectedKeypoints.toString());
+            } else {
+                Toast.makeText(KeypointDetailsActivity.this, "Le keypoint n'a pas encore été chargé", Toast.LENGTH_SHORT).show();
+            }
 
-            // Retour à Planify
-            Intent intent = new Intent(this, PlanifyActivity.class);
+            // Retour à l'activité Planify
+            Intent intent = new Intent(KeypointDetailsActivity.this, PlanifyActivity.class);
+            intent.putExtra("token", token);
             startActivity(intent);
         });
+
     }
 
     public void requestDetails(int kpId) {
@@ -94,7 +105,17 @@ public class KeypointDetailsActivity extends AppCompatActivity {
             String kpStartDate = jo.getString("key_point_start_date");
             String kpEndDate = jo.getString("key_point_end_date");
             String kpCover = jo.getString("key_point_cover");
+            // Pour les autres champs, utilisation de opt* pour éviter des exceptions
+            float gpsX = (float) jo.optDouble("gpsX", 0.0);
+            float gpsY = (float) jo.optDouble("gpsY", 0.0);
+            boolean is_altered = jo.optBoolean("is_altered", false);
+            int cityId = jo.optInt("cityId", 0);
 
+            // Création de l'objet Keypoint et stockage en variable
+            currentKeypoint = new Keypoint(kpId, kpName, kpPrice, kpStartDate, kpEndDate, kpCover,
+                    gpsX, gpsY, is_altered, cityId);
+
+            // Mise à jour de l'affichage
             byte[] decodedString = Base64.decode(kpCover, Base64.DEFAULT);
             Bitmap decodedBitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
             imageView.setImageBitmap(decodedBitmap);

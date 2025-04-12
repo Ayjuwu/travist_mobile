@@ -1,9 +1,10 @@
 package com.example.travist;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,6 +22,7 @@ public class TravelAdapter extends RecyclerView.Adapter<TravelAdapter.TravelView
     @NonNull
     @Override
     public TravelViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // Inflater le layout pour chaque élément (ici un TextView)
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.travel_btn_item, parent, false);
         return new TravelViewHolder(view);
@@ -29,7 +31,8 @@ public class TravelAdapter extends RecyclerView.Adapter<TravelAdapter.TravelView
     @Override
     public void onBindViewHolder(@NonNull TravelViewHolder holder, int position) {
         Travel travel = travelList.get(position);
-        holder.tvName.setText(travel.name);
+        Log.i("TRAVEL_ADAPTER", "Binding travel at position: " + position + ", name: " + travel.name);
+        holder.btnTravelName.setText(travel.name);
     }
 
     @Override
@@ -37,13 +40,15 @@ public class TravelAdapter extends RecyclerView.Adapter<TravelAdapter.TravelView
         return travelList.size();
     }
 
+    // ViewHolder pour chaque item de la RecyclerView
     public static class TravelViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName;
-
+        Button btnTravelName;
         public TravelViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvName = itemView.findViewById(R.id.tvTravelName);
+            // Associer la TextView avec l'id du layout
+            btnTravelName = itemView.findViewById(R.id.btnTravelName);
         }
     }
 }
+
 

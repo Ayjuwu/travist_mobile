@@ -33,7 +33,6 @@ public class Profile extends AppCompatActivity {
     RequestQueue rq;
     String token;
     Button planifyBtn;
-
     RecyclerView recyclerView;
     TravelAdapter adapter;
     List<Travel> travelList = new ArrayList<>();
@@ -76,19 +75,31 @@ public class Profile extends AppCompatActivity {
 
     public void processDetails(String response) {
         try {
-            JSONObject joData = new JSONObject(response).getJSONObject("data").getJSONObject("profile").getJSONObject("data");
+            JSONObject joData = new JSONObject(response)
+                    .getJSONObject("data")
+                    .getJSONObject("profile")
+                    .getJSONObject("data");
 
-            TextView tvPs;
+            // Récupération des données utilisateur
+            String userName = joData.getString("user_name");
+            int userId = joData.getInt("id");
 
-            tvPs = findViewById(R.id.tvPseudo);
-            tvPs.setText(joData.getString("user_name"));
+            // Stocker dans le UserSession
+            UserSession session = UserSession.getInstance();
+            session.setUserId(userId);
+            session.setUserName(userName);
+            session.setToken(token);
 
-            int user_id = joData.getInt("id");
+            // Mise à jour de l'interface utilisateur
+            TextView tvPs = findViewById(R.id.tvPseudo);
+            tvPs.setText(userName);
 
-            String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTravelsByUser/" + user_id;
+            // Appel pour récupérer les voyages, en utilisant userId
+            String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTravelsByUser/" + userId;
             StringRequest req = new StringRequest(Request.Method.GET, url, this::processUserTravels, this::handleErrors) {
+                @Override
                 public Map<String, String> getHeaders() throws AuthFailureError {
-                    return new HashMap<String, String>();
+                    return new HashMap<>();
                 }
             };
 
