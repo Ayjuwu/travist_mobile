@@ -1,12 +1,14 @@
 package com.example.travist;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager2.widget.ViewPager2;
 
 import com.makeramen.roundedimageview.RoundedImageView;
 
@@ -15,30 +17,32 @@ import java.util.List;
 public class SliderAdapter extends RecyclerView.Adapter<SliderAdapter.SliderViewHolder> {
 
     private List<SliderItem> sliderItems;
-    private ViewPager2 viewPager2;
 
-    SliderAdapter(List<SliderItem> sliderItems, ViewPager2 viewPager2) {
+    public SliderAdapter(List<SliderItem> sliderItems) {
         this.sliderItems = sliderItems;
-        this.viewPager2 = viewPager2;
     }
 
     @NonNull
     @Override
-    public SliderViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new SliderViewHolder(
-                LayoutInflater.from(parent.getContext()).inflate(
-                        R.layout.single_point_container,
-                        parent,false
-                )
-        );
+    public SliderViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        // Précise bien le parent et false pour attachToRoot
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.kp_cover_item, parent, false);
+        return new SliderViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull SliderViewHolder holder, int position) {
-        holder.setImage(sliderItems.get(position));
-        if(position == sliderItems.size() - 2) {
-            viewPager2.post(runnable);
+        String base64 = sliderItems.get(position).getBase64Image();
+
+        // Retirer le préfixe si présent
+        if (base64.startsWith("data:image")) {
+            base64 = base64.substring(base64.indexOf(",") + 1);
         }
+
+        byte[] imageBytes = Base64.decode(base64, Base64.DEFAULT);
+        Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+
+        holder.imageView.setImageBitmap(bitmap);
     }
 
     @Override
@@ -46,23 +50,14 @@ public class SliderAdapter extends RecyclerView.Adapter<SliderAdapter.SliderView
         return sliderItems.size();
     }
 
-    class SliderViewHolder extends RecyclerView.ViewHolder {
-        private RoundedImageView imageView;
+    static class SliderViewHolder extends RecyclerView.ViewHolder {
+        RoundedImageView imageView;
+
         SliderViewHolder(@NonNull View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.imageSlide);
         }
-
-        void setImage(SliderItem sliderItem) {
-            imageView.setImageResource(sliderItem.getImage());
-        }
     }
-
-    private Runnable runnable = new Runnable() {
-        @Override
-        public void run() {
-            sliderItems.addAll(sliderItems);
-            notifyDataSetChanged();
-        }
-    };
 }
+
+

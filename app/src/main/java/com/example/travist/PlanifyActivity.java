@@ -3,103 +3,141 @@ package com.example.travist;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import android.view.View;
+import android.util.Log;
 import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager2.widget.CompositePageTransformer;
-import androidx.viewpager2.widget.MarginPageTransformer;
 import androidx.viewpager2.widget.ViewPager2;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PlanifyActivity extends AppCompatActivity {
-
+    RequestQueue rq;
+    String token;
     private Button saveBtn;
+
     private ViewPager2 viewPager2;
-    private Handler sliderHandler = new Handler();
+    private SliderAdapter adapter;
+    private List<SliderItem> sliderItems = new ArrayList<>();
+
+    private Handler sliderHandler = new Handler();  // Handler pour gérer le défilement
+    private Runnable sliderRunnable = new Runnable() {
+        @Override
+        public void run() {
+            int currentItem = viewPager2.getCurrentItem();
+            int nextItem = currentItem + 1;  // Passer à l'élément suivant
+            if (nextItem >= sliderItems.size()) {
+                nextItem = 0;  // Boucler à partir du début
+            }
+            viewPager2.setCurrentItem(nextItem, true);  // Défilement avec animation fluide
+            sliderHandler.postDelayed(this, 3000);  // Redéfinir la tâche pour l'exécution dans 3 secondes
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_planify_page);
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
-        saveBtn = findViewById(R.id.saveNewTravelBtn);
-        saveBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(PlanifyActivity.this, MainActivity.class);
-                startActivity(intent);
-            }
-        });
-
+        // Initialisation du ViewPager et de l’adapter
         viewPager2 = findViewById(R.id.viewPagerImageSlider);
+        adapter = new SliderAdapter(sliderItems);
+        viewPager2.setAdapter(adapter);
 
-        List<SliderItem> sliderItems = new ArrayList<>();
-        sliderItems.add(new SliderItem(R.drawable.pic1));
-        sliderItems.add(new SliderItem(R.drawable.pic2));
-        sliderItems.add(new SliderItem(R.drawable.pic3));
-        sliderItems.add(new SliderItem(R.drawable.pic4));
-        sliderItems.add(new SliderItem(R.drawable.pic5));
+        // Volley
+        rq = Volley.newRequestQueue(this);
+        Intent i = getIntent();
+        token = i.getStringExtra("token");
+        Log.i("HELLOJWT", "token " + token);
 
-        viewPager2.setAdapter(new SliderAdapter(sliderItems, viewPager2));
+        // Appel des données
+        this.requestDetails();
 
-        viewPager2.setClipToPadding(false);
-        viewPager2.setClipChildren(false);
-        viewPager2.setOffscreenPageLimit(3);
-        viewPager2.getChildAt(0).setOverScrollMode(RecyclerView.OVER_SCROLL_NEVER);
-
-        CompositePageTransformer compositePageTransformer = new CompositePageTransformer();
-        compositePageTransformer.addTransformer(new MarginPageTransformer(40));
-        compositePageTransformer.addTransformer(new ViewPager2.PageTransformer() {
-            @Override
-            public void transformPage(@NonNull View page, float position) {
-                float r = 1 - Math.abs(position);
-                page.setScaleY(0.85f + r * 0.15f);
-            }
-        });
-
-        viewPager2.setPageTransformer(compositePageTransformer);
-
-        viewPager2.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
-            @Override
-            public void onPageSelected(int position) {
-                super.onPageSelected(position);
-                sliderHandler.removeCallbacks(sliderRunnable);
-                sliderHandler.postDelayed(sliderRunnable, 3250);
-            }
+        // Bouton retour à MainActivity
+        saveBtn = findViewById(R.id.saveNewTravelBtn);
+        saveBtn.setOnClickListener(view -> {
+            Intent intent = new Intent(PlanifyActivity.this, MainActivity.class);
+            startActivity(intent);
         });
     }
 
-    private Runnable sliderRunnable = new Runnable() {
-        @Override
-        public void run() {
-            viewPager2.setCurrentItem(viewPager2.getCurrentItem() + 1);
-        }
-    };
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // Lancer le défilement automatique lorsque l'activité démarre
+        sliderHandler.postDelayed(sliderRunnable, 2250); // Délai
+    }
 
     @Override
-    protected void onPause() {
-        super.onPause();
+    protected void onStop() {
+        super.onStop();
+        // Arrêter le défilement automatique lorsque l'activité s'arrête
         sliderHandler.removeCallbacks(sliderRunnable);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        sliderHandler.postDelayed(sliderRunnable, 3250);
+    public void requestDetails() {
+        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getKeypoints";
+
+        StringRequest req = new StringRequest(Request.Method.GET, url, this::processDetails, this::handleErrors) {
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                // Ajoute ici ton header Authorization si besoin
+                return new HashMap<>();
+            }
+        };
+
+        rq.add(req);
+    }
+
+    public void processDetails(String response) {
+        try {
+            JSONArray jsonArray = new JSONArray(response);
+
+            if (jsonArray.length() != 0) {
+                sliderItems.clear(); // On vide le tableau si non-vide
+
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject kp = jsonArray.getJSONObject(i);
+                    String kpCover = kp.getString("key_point_cover");
+                    sliderItems.add(new SliderItem(kpCover));
+                }
+
+                // Notifier l'adapter des changements
+                adapter.notifyDataSetChanged();
+            }
+
+        } catch (JSONException x) {
+            Toast.makeText(this, "JSON PARSE ERROR", Toast.LENGTH_LONG).show();
+            Log.e("HELLOJWT", "JSON PARSE ERROR: " + response, x);
+        }
+    }
+
+    public void handleErrors(Throwable t) {
+        Toast.makeText(this, "SERVERSIDE PROBLEM", Toast.LENGTH_LONG).show();
+        Log.e("HELLOJWT", "SERVERSIDE BUG", t);
     }
 }
