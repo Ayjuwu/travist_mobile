@@ -64,9 +64,20 @@ public class PlanifyActivity extends AppCompatActivity {
             return insets;
         });
 
-        // Initialisation du ViewPager et de l’adapter
+        // Initialisation du ViewPager
         viewPager2 = findViewById(R.id.viewPagerImageSlider);
-        adapter = new SliderAdapter(sliderItems);
+
+        // Créer l'adapter en passant la liste et le listener pour le clic
+        adapter = new SliderAdapter(sliderItems, new SliderAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(int kpId) {
+                // Créer l'Intent pour démarrer l'activité suivante avec kpId
+                Intent intent = new Intent(PlanifyActivity.this, KeypointDetailsActivity.class);
+                intent.putExtra("kpId", kpId);  // Passer l'id du point clé
+                startActivity(intent);
+            }
+        });
+        // Appliquer l'adapter au ViewPager2
         viewPager2.setAdapter(adapter);
 
         // Volley
@@ -105,7 +116,6 @@ public class PlanifyActivity extends AppCompatActivity {
 
         StringRequest req = new StringRequest(Request.Method.GET, url, this::processDetails, this::handleErrors) {
             public Map<String, String> getHeaders() throws AuthFailureError {
-                // Ajoute ici ton header Authorization si besoin
                 return new HashMap<>();
             }
         };
@@ -122,8 +132,11 @@ public class PlanifyActivity extends AppCompatActivity {
 
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject kp = jsonArray.getJSONObject(i);
+
+                    int kpId = kp.getInt("id");
                     String kpCover = kp.getString("key_point_cover");
-                    sliderItems.add(new SliderItem(kpCover));
+
+                    sliderItems.add(new SliderItem(kpId, kpCover)); // Ajouter kpId et le blob à l'élément
                 }
 
                 // Notifier l'adapter des changements

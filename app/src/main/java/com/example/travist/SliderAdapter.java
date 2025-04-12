@@ -6,43 +6,43 @@ import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 
-import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.makeramen.roundedimageview.RoundedImageView;
 
 import java.util.List;
 
 public class SliderAdapter extends RecyclerView.Adapter<SliderAdapter.SliderViewHolder> {
 
     private List<SliderItem> sliderItems;
+    private OnItemClickListener listener;
 
-    public SliderAdapter(List<SliderItem> sliderItems) {
+    // Constructeur qui prend la liste et le listener pour le clic
+    public SliderAdapter(List<SliderItem> sliderItems, OnItemClickListener listener) {
         this.sliderItems = sliderItems;
+        this.listener = listener;
     }
 
-    @NonNull
     @Override
     public SliderViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        // Précise bien le parent et false pour attachToRoot
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.kp_cover_item, parent, false);
-        return new SliderViewHolder(view);
+        View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.kp_cover_item, parent, false);
+        return new SliderViewHolder(itemView);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull SliderViewHolder holder, int position) {
-        String base64 = sliderItems.get(position).getBase64Image();
+    public void onBindViewHolder(SliderViewHolder holder, int position) {
+        SliderItem currentItem = sliderItems.get(position);
 
-        // Retirer le préfixe si présent
-        if (base64.startsWith("data:image")) {
-            base64 = base64.substring(base64.indexOf(",") + 1);
-        }
-
-        byte[] imageBytes = Base64.decode(base64, Base64.DEFAULT);
-        Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-
+        byte[] decodedBytes = Base64.decode(currentItem.getImageUrl(), Base64.DEFAULT);
+        Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
         holder.imageView.setImageBitmap(bitmap);
+
+        // On définit le listener du clic sur l'image
+        holder.imageView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onItemClick(currentItem.getKpId());
+            }
+        });
     }
 
     @Override
@@ -50,14 +50,17 @@ public class SliderAdapter extends RecyclerView.Adapter<SliderAdapter.SliderView
         return sliderItems.size();
     }
 
-    static class SliderViewHolder extends RecyclerView.ViewHolder {
-        RoundedImageView imageView;
+    public static class SliderViewHolder extends RecyclerView.ViewHolder {
+        ImageView imageView;
 
-        SliderViewHolder(@NonNull View itemView) {
+        public SliderViewHolder(View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.imageSlide);
         }
     }
+
+    // Interface pour gérer le clic sur un item
+    public interface OnItemClickListener {
+        void onItemClick(int kpId);
+    }
 }
-
-

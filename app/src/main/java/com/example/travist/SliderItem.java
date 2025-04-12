@@ -1,15 +1,19 @@
 package com.example.travist;
 
 public class SliderItem {
-    private String base64Image;
+    private int kpId;
+    private String imageUrl;
 
-    public SliderItem(String base64Image) {
-        this.base64Image = base64Image;
+    public SliderItem(int kpId, String imageUrl) {
+        this.kpId = kpId;
+        this.imageUrl = imageUrl;
     }
 
-    public String getBase64Image() {
-        return base64Image;
+    public int getKpId() {
+        return kpId;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
     }
 }
-
-
