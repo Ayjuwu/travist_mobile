@@ -16,4 +16,20 @@ public class KpListHolder {
         }
         selectedKeypoints.add(kp);
     }
+
+    public static void resetKeypoints() {
+        selectedKeypoints.clear();
+    }
+
+    public static float calculateIndividualPrice() {
+        float sum = 0f;
+        for (Keypoint selected : selectedKeypoints) {
+            sum += selected.price;
+        }
+        return sum;
+    }
+
+    public static float calculateTotalPrice(int np) {
+        return calculateIndividualPrice() * np;
+    }
 }

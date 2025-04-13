@@ -62,7 +62,7 @@
                         android:textSize="16dp" />
 
                     <TextView
-                        android:id="@+id/single_budget"
+                        android:id="@+id/tvIndividualPrice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="5dp"
@@ -87,7 +87,7 @@
                         android:textSize="16dp" />
 
                     <TextView
-                        android:id="@+id/total_budget"
+                        android:id="@+id/tvTotalPrice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="5dp"
@@ -145,7 +145,8 @@
                         android:layout_height="wrap_content"
                         android:textColor="#fafafa"
                         android:ems="10"
-                        android:inputType="number" />
+                        android:inputType="number"
+                        android:text="1"/>
 
                 </LinearLayout>
 

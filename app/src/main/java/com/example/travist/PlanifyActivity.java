@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -62,6 +63,7 @@ public class PlanifyActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_planify);
 
+        // Gestion des insets pour l'edge to edge
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -72,7 +74,7 @@ public class PlanifyActivity extends AppCompatActivity {
         viewPager2 = findViewById(R.id.viewPagerImageSlider);
         saveBtn = findViewById(R.id.saveNewTravelBtn);
 
-        // Initialisation de l'adapter avec un onClick qui ouvre KeypointDetailsActivity
+        // Initialisation de l'adapter
         adapter = new SliderAdapter(sliderItems, kpId -> {
             Intent intent = new Intent(PlanifyActivity.this, KeypointDetailsActivity.class);
             intent.putExtra("token", token);
@@ -93,12 +95,42 @@ public class PlanifyActivity extends AppCompatActivity {
         // Instanciation du TravelDatabaseHelper
         travelDbHelper = new TravelDatabaseHelper(this);
 
+        // Référence à l'EditText et à la TextView pour les prix
+        EditText etPeopleNumber = findViewById(R.id.etPeopleNumber);
+        TextView tvTotalPrice = findViewById(R.id.tvTotalPrice);
+
+        // Ajout du TextWatcher pour mettre à jour le prix total dès la modification de la valeur
+        etPeopleNumber.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                int peopleNumber = 0;
+                try {
+                    peopleNumber = Integer.parseInt(s.toString());
+                } catch (NumberFormatException e) {
+                    peopleNumber = 0;
+                }
+                float totalPrice = KpListHolder.calculateTotalPrice(peopleNumber);
+                tvTotalPrice.setText(totalPrice + "€");
+            }
+        });
+
         // Bouton pour sauvegarder le nouveau voyage
         saveBtn.setOnClickListener(view -> {
+            // Désactiver le bouton dès le début du traitement
+            saveBtn.setEnabled(false);
+            // Procéder à la création et l'insertion du voyage
             createAndSaveNewTravel();
+            // On passe ensuite à Profile
             Intent intent = new Intent(PlanifyActivity.this, Profile.class);
             intent.putExtra("token", token);
             startActivity(intent);
+            finish(); // Ferme l'activité actuelle pour ne pas revenir en arrière
         });
     }
 
@@ -131,24 +163,24 @@ public class PlanifyActivity extends AppCompatActivity {
         try {
             JSONArray jsonArray = new JSONArray(response);
 
+            TextView tvTotalPrice = findViewById(R.id.tvTotalPrice);
+            TextView tvIndividualPrice = findViewById(R.id.tvIndividualPrice);
+            EditText etPeopleNumber = findViewById(R.id.etPeopleNumber);
+
+            String peopleNumberStr = etPeopleNumber.getText().toString();
+            int peopleNumber = Integer.parseInt(peopleNumberStr);
+
             if (jsonArray.length() != 0) {
                 sliderItems.clear();
-
-                // Récupérer la liste des keypoints sélectionnés depuis le singleton
                 List<Keypoint> selectedKeypoints = KpListHolder.selectedKeypoints;
 
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject kp = jsonArray.getJSONObject(i);
                     int kpId = kp.getInt("id");
-                    // Dans le JSON, le champ s'appelle "is_altered_keypoint" (1 = vrai)
                     int is_altered_keypoint = kp.getInt("is_altered_keypoint");
-
-                    // Si is_altered_keypoint est vrai, on ne l'affiche pas
                     if (is_altered_keypoint == 1) {
                         continue;
                     }
-
-                    // Vérifier si ce keypoint est déjà sélectionné
                     boolean alreadySelected = false;
                     for (Keypoint selected : selectedKeypoints) {
                         if (selected.id == kpId) {
@@ -159,26 +191,38 @@ public class PlanifyActivity extends AppCompatActivity {
                     if (alreadySelected) {
                         continue;
                     }
-
-                    // Récupération de la couverture (cover)
                     String kpCover = kp.getString("key_point_cover");
-
-                    // Ajouter l'élément au carrousel
                     sliderItems.add(new SliderItem(kpId, kpCover));
                 }
 
-                // Notifier l'adapter des changements
+                if (peopleNumber >= 1) {
+                    tvIndividualPrice.setText(KpListHolder.calculateIndividualPrice() + "€");
+                    tvTotalPrice.setText(KpListHolder.calculateTotalPrice(peopleNumber) + "€");
+                }
+
                 adapter.notifyDataSetChanged();
             }
         } catch (JSONException x) {
-            Toast.makeText(this, "JSON PARSE ERROR", Toast.LENGTH_LONG).show();
-            Log.e("HELLOJWT", "JSON PARSE ERROR: " + response, x);
+            handleError("JSON PARSE ERROR: " + response, "Erreur de traitement des données JSON");
         }
     }
 
     private void handleErrors(Throwable t) {
-        Toast.makeText(this, "SERVERSIDE PROBLEM", Toast.LENGTH_LONG).show();
-        Log.e("HELLOJWT", "SERVERSIDE BUG", t);
+        handleError("SERVERSIDE BUG", "Erreur du côté serveur");
+    }
+
+    private void handleError(String logMessage, String toastMessage) {
+        Log.e("PlanifyActivity", logMessage);
+        Toast.makeText(PlanifyActivity.this, toastMessage, Toast.LENGTH_LONG).show();
+        KpListHolder.resetKeypoints();
+        saveBtn.setEnabled(true);
+    }
+
+    private void handleSuccess(String logMessage, String toastMessage) {
+        Log.i("PlanifyActivity", logMessage);
+        Toast.makeText(PlanifyActivity.this, toastMessage, Toast.LENGTH_LONG).show();
+        KpListHolder.resetKeypoints();
+        saveBtn.setEnabled(true);
     }
 
     private void createAndSaveNewTravel() {
@@ -189,28 +233,33 @@ public class PlanifyActivity extends AppCompatActivity {
         String peopleNumberStr = etPeopleNumber.getText().toString();
 
         if (travelName.isEmpty()) {
-            Toast.makeText(this, "Veuillez indiquer un nom de voyage", Toast.LENGTH_SHORT).show();
+            handleError("Veuillez indiquer un nom de voyage", "Veuillez indiquer un nom de voyage");
             return;
         }
 
         if (peopleNumberStr.isEmpty()) {
-            Toast.makeText(this, "Veuillez indiquer un nombre de voyageurs", Toast.LENGTH_SHORT).show();
+            handleError("Veuillez indiquer un nombre de voyageurs", "Veuillez indiquer un nombre de voyageurs");
             return;
         }
 
         // Gestion des erreurs pour la conversion du nombre de voyageurs
-        int peopleNumber = 0;
+        int peopleNumber = 1;
         try {
             peopleNumber = Integer.parseInt(peopleNumberStr);
         } catch (NumberFormatException e) {
-            Toast.makeText(this, "Veuillez entrer un nombre valide de voyageurs", Toast.LENGTH_SHORT).show();
+            handleError("Veuillez entrer un nombre valide de voyageurs", "Veuillez entrer un nombre valide de voyageurs");
+            return;
+        }
+
+        if (peopleNumber < 1) {
+            handleError("Veuillez entrer un nombre valide de voyageurs", "Veuillez entrer un nombre valide de voyageurs");
             return;
         }
 
         // Récupération des keypoints sélectionnés depuis le singleton
         List<Keypoint> selectedKeypointsList = KpListHolder.selectedKeypoints;
         if (selectedKeypointsList == null || selectedKeypointsList.isEmpty()) {
-            Toast.makeText(this, "Vous n'avez pas sélectionné de keypoints !", Toast.LENGTH_SHORT).show();
+            handleError("Vous n'avez pas sélectionné de keypoints !", "Vous n'avez pas sélectionné de keypoints !");
             return;
         }
 
@@ -253,6 +302,8 @@ public class PlanifyActivity extends AppCompatActivity {
             Log.i("HELLOJWT", "Données envoyées : " + travelData.toString());
         } catch (JSONException e) {
             e.printStackTrace();
+            KpListHolder.resetKeypoints();
+            return;
         }
 
         String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/createTravel";
@@ -274,7 +325,7 @@ public class PlanifyActivity extends AppCompatActivity {
                                 Log.i("HELLOJWT", "ID du voyage créé : " + newTravelId);
 
                                 if (newTravelId != -1) {
-                                    Toast.makeText(PlanifyActivity.this, "Voyage créé avec succès ! ID: " + newTravelId, Toast.LENGTH_SHORT).show();
+                                    handleSuccess("Voyage créé avec succès !", "Voyage créé avec succès !");
 
                                     // Appeler insertAssigned pour lier les keypoints au voyage
                                     insertAssigned(newTravelId, selectedKeypointsList);
@@ -283,21 +334,23 @@ public class PlanifyActivity extends AppCompatActivity {
                                     Intent intent = new Intent(PlanifyActivity.this, Profile.class);
                                     intent.putExtra("token", token);
                                     startActivity(intent);
+
+                                    KpListHolder.resetKeypoints();
                                 } else {
-                                    Toast.makeText(PlanifyActivity.this, "Erreur lors de la création du voyage", Toast.LENGTH_SHORT).show();
+                                    handleError("Erreur lors de la création du voyage", "Erreur lors de la création du voyage");
                                 }
                             }
                         } else {
-                            Toast.makeText(PlanifyActivity.this, "Erreur lors de la création du voyage", Toast.LENGTH_SHORT).show();
+                            handleError("Erreur lors de la création du voyage", "Erreur lors de la création du voyage");
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
-                        Toast.makeText(PlanifyActivity.this, "Erreur d'analyse de la réponse serveur", Toast.LENGTH_SHORT).show();
+                        handleError("Erreur d'analyse de la réponse serveur", "Erreur d'analyse de la réponse serveur");
                     }
                 },
                 error -> {
                     error.printStackTrace();
-                    Toast.makeText(PlanifyActivity.this, "Erreur de connexion au serveur", Toast.LENGTH_SHORT).show();
+                    handleError("Erreur de connexion au serveur", "Erreur de connexion au serveur");
                 }
         ) {
             @Override
@@ -343,6 +396,8 @@ public class PlanifyActivity extends AppCompatActivity {
 
         } catch (JSONException e) {
             e.printStackTrace();
+            KpListHolder.resetKeypoints();
+            return;
         }
 
         // URL de l'API pour l'assignation des keypoints
@@ -355,18 +410,18 @@ public class PlanifyActivity extends AppCompatActivity {
                         JSONObject jsonResponse = new JSONObject(response);
                         Log.i("HELLOJWT", "Réponse assignation keypoints : " + response);
                         if (jsonResponse.optBoolean("success", false)) {
-                            Toast.makeText(PlanifyActivity.this, "Keypoints assignés avec succès", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(PlanifyActivity.this, "Lieux assignés avec succès", Toast.LENGTH_SHORT).show();
                         } else {
                             Toast.makeText(PlanifyActivity.this, "Erreur lors de l'assignation des keypoints", Toast.LENGTH_SHORT).show();
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
-                        Toast.makeText(PlanifyActivity.this, "Erreur d'analyse de la réponse serveur", Toast.LENGTH_SHORT).show();
+                        handleError("Erreur d'analyse de la réponse serveur", "Erreur d'analyse de la réponse serveur");
                     }
                 },
                 error -> {
                     error.printStackTrace();
-                    Toast.makeText(PlanifyActivity.this, "Erreur de connexion au serveur", Toast.LENGTH_SHORT).show();
+                    handleError("Erreur de connexion au serveur", "Erreur de connexion au serveur");
                 }
         ) {
             @Override
