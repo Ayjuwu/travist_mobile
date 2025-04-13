@@ -1,6 +1,8 @@
 package com.example.travist;
 
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -256,6 +258,12 @@ public class PlanifyActivity extends AppCompatActivity {
             return;
         }
 
+        // Vérification des doublons dans la base de données
+        if (isTravelNameExists(travelName)) {
+            handleError("Nom du voyage déjà existant", "Ce nom de voyage existe déjà. Choisissez un autre nom.");
+            return;
+        }
+
         // Récupération des keypoints sélectionnés depuis le singleton
         List<Keypoint> selectedKeypointsList = KpListHolder.selectedKeypoints;
         if (selectedKeypointsList == null || selectedKeypointsList.isEmpty()) {
@@ -443,5 +451,22 @@ public class PlanifyActivity extends AppCompatActivity {
         };
 
         rq.add(postRequest);
+    }
+
+    // Vérifie si un voyage avec le même nom existe déjà dans la base de données
+    private boolean isTravelNameExists(String travelName) {
+        SQLiteDatabase db = travelDbHelper.getReadableDatabase();
+        Cursor cursor = db.query(
+                TravelDatabaseHelper.TABLE,
+                new String[]{TravelDatabaseHelper.TRAVEL_NAME},
+                TravelDatabaseHelper.TRAVEL_NAME + " = ?",
+                new String[]{travelName},
+                null, null, null
+        );
+
+        boolean exists = cursor.getCount() > 0;
+        cursor.close();
+        db.close();
+        return exists;
     }
 }
