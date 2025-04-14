@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -13,6 +14,7 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -85,7 +87,30 @@ public class PlanifyActivity extends AppCompatActivity {
         RecyclerView rvSelectedKp = findViewById(R.id.recyclerSelectedKeypoints);
         rvSelectedKp.setLayoutManager(new LinearLayoutManager(this));
 
-        selectedKpAdapter = new SelectedKeypointsAdapter(KpListHolder.selectedKeypoints);
+        // Utilisation de la variable d'instance existante pour l'adaptateur
+        selectedKpAdapter = new SelectedKeypointsAdapter(KpListHolder.selectedKeypoints, new SelectedKeypointsAdapter.OnItemRemoveListener() {
+
+            @Override
+            public void onRemove(Keypoint kp) {
+                KpListHolder.selectedKeypoints.remove(kp);
+                requestDetails();
+                selectedKpAdapter.notifyDataSetChanged();
+
+                // Ajout dans le carrousel si pas déjà présent
+                boolean alreadyInSlider = false;
+                for (SliderItem item : sliderItems) {
+                    if (item.getKpId() == kp.id) {
+                        alreadyInSlider = true;
+                        break;
+                    }
+                }
+                if (!alreadyInSlider) {
+                    sliderItems.add(new SliderItem(kp.id, kp.cover));
+                    sliderAdapter.notifyDataSetChanged();
+                }
+            }
+        });
+
         rvSelectedKp.setAdapter(selectedKpAdapter);
 
 
@@ -215,6 +240,17 @@ public class PlanifyActivity extends AppCompatActivity {
                 if (peopleNumber >= 1) {
                     tvIndividualPrice.setText(KpListHolder.calculateIndividualPrice() + "€");
                     tvTotalPrice.setText(KpListHolder.calculateTotalPrice(peopleNumber) + "€");
+                }
+
+                ConstraintLayout carouselContainer = findViewById(R.id.carouselLayout);
+
+                int totalAvailableKeypoints = jsonArray.length();
+                int selectedKeypointsCount = KpListHolder.selectedKeypoints.size();
+
+                if (selectedKeypointsCount >= totalAvailableKeypoints) {
+                    carouselContainer.setVisibility(View.GONE);
+                } else {
+                    carouselContainer.setVisibility(View.VISIBLE);
                 }
 
                 sliderAdapter.notifyDataSetChanged();

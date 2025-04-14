@@ -21,6 +21,9 @@
             android:id="@+id/tvKpItemName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:textColor="#dddefa"
+            android:fontFamily="sans-serif-condensed"
+            android:textSize="16dp"
             android:text="" />
 
         <LinearLayout
