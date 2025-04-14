@@ -111,11 +111,11 @@ public class PlanifyActivity extends AppCompatActivity {
 
             @Override
             public void afterTextChanged(android.text.Editable s) {
-                int peopleNumber = 0;
+                int peopleNumber = 1;
                 try {
                     peopleNumber = Integer.parseInt(s.toString());
                 } catch (NumberFormatException e) {
-                    peopleNumber = 0;
+                    peopleNumber = 1;
                 }
                 float totalPrice = KpListHolder.calculateTotalPrice(peopleNumber);
                 tvTotalPrice.setText(totalPrice + "€");
@@ -124,15 +124,12 @@ public class PlanifyActivity extends AppCompatActivity {
 
         // Bouton pour sauvegarder le nouveau voyage
         saveBtn.setOnClickListener(view -> {
-            // Désactiver le bouton dès le début du traitement
             saveBtn.setEnabled(false);
-            // Procéder à la création et l'insertion du voyage
             createAndSaveNewTravel();
-            // On passe ensuite à Profile
             Intent intent = new Intent(PlanifyActivity.this, Profile.class);
             intent.putExtra("token", token);
             startActivity(intent);
-            finish(); // Ferme l'activité actuelle pour ne pas revenir en arrière
+            finish();
         });
     }
 
@@ -333,17 +330,9 @@ public class PlanifyActivity extends AppCompatActivity {
                                 Log.i("HELLOJWT", "ID du voyage créé : " + newTravelId);
 
                                 if (newTravelId != -1) {
-                                    handleSuccess("Voyage créé avec succès !", "Voyage créé avec succès !");
-
                                     // Appeler insertAssigned pour lier les keypoints au voyage
                                     insertAssigned(newTravelId, selectedKeypointsList);
-
-                                    // Rediriger vers la page d'accueil ou autre activité
-                                    Intent intent = new Intent(PlanifyActivity.this, Profile.class);
-                                    intent.putExtra("token", token);
-                                    startActivity(intent);
-
-                                    KpListHolder.resetKeypoints();
+                                    handleSuccess("Voyage créé avec succès !", "Voyage créé avec succès !");
                                 } else {
                                     handleError("Erreur lors de la création du voyage", "Erreur lors de la création du voyage");
                                 }
@@ -387,8 +376,6 @@ public class PlanifyActivity extends AppCompatActivity {
         try {
             // Ajouter l'ID du voyage et les keypoints dans le JSON
             assignedData.put("travel_id", travelId);
-
-            // Créer un tableau des keypoints
             JSONArray keypointsArray = new JSONArray();
             for (Keypoint kp : keypoints) {
                 JSONObject keypointObj = new JSONObject();
@@ -398,20 +385,15 @@ public class PlanifyActivity extends AppCompatActivity {
                 keypointsArray.put(keypointObj);
             }
             assignedData.put("keypoints", keypointsArray);
-
-            // Log des données envoyées pour debug
             Log.i("HELLOJWT", "Données envoyées pour assignation : " + assignedData.toString());
-
         } catch (JSONException e) {
             e.printStackTrace();
             KpListHolder.resetKeypoints();
             return;
         }
 
-        // URL de l'API pour l'assignation des keypoints
         String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/insertAssigned";
 
-        // Requête POST pour envoyer les données
         StringRequest postRequest = new StringRequest(Request.Method.POST, url,
                 response -> {
                     try {
@@ -419,8 +401,13 @@ public class PlanifyActivity extends AppCompatActivity {
                         Log.i("HELLOJWT", "Réponse assignation keypoints : " + response);
                         if (jsonResponse.optBoolean("success", false)) {
                             Toast.makeText(PlanifyActivity.this, "Lieux assignés avec succès", Toast.LENGTH_SHORT).show();
+                            // Une fois l'assignation réussie, vous pouvez lancer l'activité suivante.
+                            Intent intent = new Intent(PlanifyActivity.this, Profile.class);
+                            intent.putExtra("token", token);
+                            startActivity(intent);
+                            finish();
                         } else {
-                            Toast.makeText(PlanifyActivity.this, "Erreur lors de l'assignation des keypoints", Toast.LENGTH_SHORT).show();
+                            handleError("Erreur lors de l'assignation des keypoints", "Erreur lors de l'assignation des keypoints");
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();

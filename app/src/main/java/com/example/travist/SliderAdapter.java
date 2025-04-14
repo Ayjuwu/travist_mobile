@@ -59,6 +59,11 @@ public class SliderAdapter extends RecyclerView.Adapter<SliderAdapter.SliderView
         }
     }
 
+    public void setFilteredList(List<SliderItem> filteredList) {
+        this.sliderItems = filteredList;
+        notifyDataSetChanged();
+    }
+
     // Interface pour gérer le clic sur un item
     public interface OnItemClickListener {
         void onItemClick(int kpId);
