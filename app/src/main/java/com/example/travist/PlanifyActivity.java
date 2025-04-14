@@ -1,8 +1,6 @@
 package com.example.travist;
 
 import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -70,7 +68,6 @@ public class PlanifyActivity extends AppCompatActivity {
         setContentView(R.layout.activity_planify);
 
 
-        // Gestion des insets pour l'edge to edge
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -291,139 +288,141 @@ public class PlanifyActivity extends AppCompatActivity {
             return;
         }
 
-        if (peopleNumberStr.isEmpty()) {
-            handleError("Veuillez indiquer un nombre de voyageurs", "Veuillez indiquer un nombre de voyageurs");
-            return;
-        }
-
-        // Gestion des erreurs pour la conversion du nombre de voyageurs
-        int peopleNumber = 1;
-        try {
-            peopleNumber = Integer.parseInt(peopleNumberStr);
-        } catch (NumberFormatException e) {
-            handleError("Veuillez entrer un nombre valide de voyageurs", "Veuillez entrer un nombre valide de voyageurs");
-            return;
-        }
-
-        if (peopleNumber < 1) {
-            handleError("Veuillez entrer un nombre valide de voyageurs", "Veuillez entrer un nombre valide de voyageurs");
-            return;
-        }
-
-        // Vérification des doublons dans la base de données
-        if (isTravelNameExists(travelName)) {
-            handleError("Nom du voyage déjà existant", "Ce nom de voyage existe déjà. Choisissez un autre nom.");
-            return;
-        }
-
-        // Récupération des keypoints sélectionnés depuis le singleton
-        List<Keypoint> selectedKeypointsList = KpListHolder.selectedKeypoints;
-        if (selectedKeypointsList == null || selectedKeypointsList.isEmpty()) {
-            handleError("Vous n'avez pas sélectionné de keypoints !", "Vous n'avez pas sélectionné de keypoints !");
-            return;
-        }
-
-        // Initialisation des variables de date et de prix
-        String earliestDate = null;
-        String latestDate = null;
-        float individualPrice = 0f;
-        float totalPrice = 0f;
-
-        // Calcul de la date la plus tôt et la date la plus tard, et calcul des prix
-        for (Keypoint kp : selectedKeypointsList) {
-            individualPrice += kp.price;
-            totalPrice += kp.price * peopleNumber;
-
-            String kpStart = kp.startDate;
-            String kpEnd = kp.endDate;
-
-            if (earliestDate == null || kpStart.compareTo(earliestDate) < 0) {
-                earliestDate = kpStart;
+        isTravelNameExists(nameExists -> {
+            if (nameExists) {
+                handleError("Ce nom de voyage existe déjà", "Un voyage avec ce nom existe déjà.");
+                saveBtn.setEnabled(true);
+                return;
             }
-            if (latestDate == null || kpEnd.compareTo(latestDate) > 0) {
-                latestDate = kpEnd;
+
+            if (peopleNumberStr.isEmpty()) {
+                handleError("Veuillez indiquer un nombre de voyageurs", "Veuillez indiquer un nombre de voyageurs");
+                return;
             }
-        }
 
-        // Création du JSON à envoyer
-        JSONObject travelData = new JSONObject();
-        try {
-            travelData.put("travel_name", travelName);
-            travelData.put("people_number", peopleNumber);
-            travelData.put("individual_price", individualPrice);
-            travelData.put("total_price", totalPrice);
-            travelData.put("travel_start_date", earliestDate);
-            travelData.put("travel_end_date", latestDate);
+            // Gestion des erreurs pour la conversion du nombre de voyageurs
+            int peopleNumber = 1;
+            try {
+                peopleNumber = Integer.parseInt(peopleNumberStr);
+            } catch (NumberFormatException e) {
+                handleError("Veuillez entrer un nombre valide de voyageurs", "Veuillez entrer un nombre valide de voyageurs");
+                return;
+            }
 
-            // Ajouter l'ID de l'utilisateur
-            travelData.put("user_id", currentUserId);
+            if (peopleNumber < 1) {
+                handleError("Veuillez entrer un nombre valide de voyageurs", "Veuillez entrer un nombre valide de voyageurs");
+                return;
+            }
 
-            // Log des données envoyées pour debug
-            Log.i("HELLOJWT", "Données envoyées : " + travelData.toString());
-        } catch (JSONException e) {
-            e.printStackTrace();
-            KpListHolder.resetKeypoints();
-            return;
-        }
+            // Récupération des keypoints sélectionnés depuis le singleton
+            List<Keypoint> selectedKeypointsList = KpListHolder.selectedKeypoints;
+            if (selectedKeypointsList == null || selectedKeypointsList.isEmpty()) {
+                handleError("Vous n'avez pas sélectionné de keypoints !", "Vous n'avez pas sélectionné de keypoints !");
+                return;
+            }
 
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/createTravel";
+            // Initialisation des variables de date et de prix
+            String earliestDate = null;
+            String latestDate = null;
+            float individualPrice = 0f;
+            float totalPrice = 0f;
 
-        // Création de la requête POST avec Volley
-        StringRequest postRequest = new StringRequest(Request.Method.POST, url,
-                response -> {
-                    try {
-                        JSONObject jsonResponse = new JSONObject(response);
-                        Log.i("HELLOJWT", "Réponse JSON: " + response);
-                        boolean success = jsonResponse.optBoolean("success", false);
-                        Log.i("HELLOJWT", "Success value: " + success);
+            // Calcul de la date la plus tôt et la date la plus tard, et calcul des prix
+            for (Keypoint kp : selectedKeypointsList) {
+                individualPrice += kp.price;
+                totalPrice += kp.price * peopleNumber;
 
-                        if (jsonResponse.has("success") && jsonResponse.optBoolean("success", false)) {
-                            // Extraction correcte de l'ID du voyage depuis la réponse
-                            JSONObject tData = jsonResponse.optJSONObject("data");
-                            if (tData != null) {
-                                int newTravelId = tData.optJSONObject("travel").optInt("id", -1);
-                                Log.i("HELLOJWT", "ID du voyage créé : " + newTravelId);
+                String kpStart = kp.startDate;
+                String kpEnd = kp.endDate;
 
-                                if (newTravelId != -1) {
-                                    // Appeler insertAssigned pour lier les keypoints au voyage
-                                    insertAssigned(newTravelId, selectedKeypointsList);
-                                    handleSuccess("Voyage créé avec succès !", "Voyage créé avec succès !");
-                                } else {
-                                    handleError("Erreur lors de la création du voyage", "Erreur lors de la création du voyage");
-                                }
-                            }
-                        } else {
-                            handleError("Erreur lors de la création du voyage", "Erreur lors de la création du voyage");
-                        }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        handleError("Erreur d'analyse de la réponse serveur", "Erreur d'analyse de la réponse serveur");
-                    }
-                },
-                error -> {
-                    error.printStackTrace();
-                    handleError("Erreur de connexion au serveur", "Erreur de connexion au serveur");
+                if (earliestDate == null || kpStart.compareTo(earliestDate) < 0) {
+                    earliestDate = kpStart;
                 }
-        ) {
-            @Override
-            public byte[] getBody() {
-                return travelData.toString().getBytes();
+                if (latestDate == null || kpEnd.compareTo(latestDate) > 0) {
+                    latestDate = kpEnd;
+                }
             }
 
-            @Override
-            public String getBodyContentType() {
-                return "application/json; charset=UTF-8";
+            // Création du JSON à envoyer
+            JSONObject travelData = new JSONObject();
+            try {
+                travelData.put("travel_name", travelName);
+                travelData.put("people_number", peopleNumber);
+                travelData.put("individual_price", individualPrice);
+                travelData.put("total_price", totalPrice);
+                travelData.put("travel_start_date", earliestDate);
+                travelData.put("travel_end_date", latestDate);
+
+                // Ajouter l'ID de l'utilisateur
+                travelData.put("user_id", currentUserId);
+
+                // Log des données envoyées pour debug
+                Log.i("HELLOJWT", "Données envoyées : " + travelData.toString());
+            } catch (JSONException e) {
+                e.printStackTrace();
+                KpListHolder.resetKeypoints();
+                return;
             }
 
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("Content-Type", "application/json; charset=UTF-8");
-                return headers;
-            }
-        };
+            String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/createTravel";
 
-        rq.add(postRequest);
+            // Création de la requête POST avec Volley
+            StringRequest postRequest = new StringRequest(Request.Method.POST, url,
+                    response -> {
+                        try {
+                            JSONObject jsonResponse = new JSONObject(response);
+                            Log.i("HELLOJWT", "Réponse JSON: " + response);
+                            boolean success = jsonResponse.optBoolean("success", false);
+                            Log.i("HELLOJWT", "Success value: " + success);
+
+                            if (jsonResponse.has("success") && jsonResponse.optBoolean("success", false)) {
+                                // Extraction correcte de l'ID du voyage depuis la réponse
+                                JSONObject tData = jsonResponse.optJSONObject("data");
+                                if (tData != null) {
+                                    int newTravelId = tData.optJSONObject("travel").optInt("id", -1);
+                                    Log.i("HELLOJWT", "ID du voyage créé : " + newTravelId);
+
+                                    if (newTravelId != -1) {
+                                        // Appeler insertAssigned pour lier les keypoints au voyage
+                                        insertAssigned(newTravelId, selectedKeypointsList);
+                                        handleSuccess("Voyage créé avec succès !", "Voyage créé avec succès !");
+                                    } else {
+                                        handleError("Erreur lors de la création du voyage", "Erreur lors de la création du voyage");
+                                    }
+                                }
+                            } else {
+                                handleError("Erreur lors de la création du voyage", "Erreur lors de la création du voyage");
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            handleError("Erreur d'analyse de la réponse serveur", "Erreur d'analyse de la réponse serveur");
+                        }
+                    },
+                    error -> {
+                        error.printStackTrace();
+                        handleError("Erreur de connexion au serveur", "Erreur de connexion au serveur");
+                    }
+            ) {
+                @Override
+                public byte[] getBody() {
+                    return travelData.toString().getBytes();
+                }
+
+                @Override
+                public String getBodyContentType() {
+                    return "application/json; charset=UTF-8";
+                }
+
+                @Override
+                public Map<String, String> getHeaders() {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("Content-Type", "application/json; charset=UTF-8");
+                    return headers;
+                }
+            };
+
+            rq.add(postRequest);
+        });
     }
 
     private void insertAssigned(int travelId, List<Keypoint> keypoints) {
@@ -495,20 +494,42 @@ public class PlanifyActivity extends AppCompatActivity {
         rq.add(postRequest);
     }
 
-    // Vérifie si un voyage avec le même nom existe déjà dans la base de données
-    private boolean isTravelNameExists(String travelName) {
-        SQLiteDatabase db = travelDbHelper.getReadableDatabase();
-        Cursor cursor = db.query(
-                TravelDatabaseHelper.TABLE,
-                new String[]{TravelDatabaseHelper.TRAVEL_NAME},
-                TravelDatabaseHelper.TRAVEL_NAME + " = ?",
-                new String[]{travelName},
-                null, null, null
-        );
+    // On vérifie si un voyage avec le même nom existe déjà dans la base de données
+    private void isTravelNameExists(OnTravelNameCheckListener listener) {
+        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTravelsByUser/" + currentUserId;
+        StringRequest req = new StringRequest(Request.Method.GET, url,
+                response -> searchTravelName(response, listener),
+                this::handleErrors
+        ) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                return new HashMap<>();
+            }
+        };
 
-        boolean exists = cursor.getCount() > 0;
-        cursor.close();
-        db.close();
-        return exists;
+        rq.add(req);
+    }
+
+    private void searchTravelName(String response, OnTravelNameCheckListener listener) {
+        try {
+            EditText etTravelName = findViewById(R.id.etTravelName);
+            String nameToCheck = etTravelName.getText().toString().trim();
+
+            JSONArray jsonArray = new JSONArray(response);
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject travel = jsonArray.getJSONObject(i);
+                String existingName = travel.getString("travel_name").trim();
+                if (existingName.equalsIgnoreCase(nameToCheck)) {
+                    // Le nom existe déjà
+                    listener.onCheckComplete(true);
+                    return;
+                }
+            }
+            // Aucun nom correspondant
+            listener.onCheckComplete(false);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            listener.onCheckComplete(false);
+        }
     }
 }
