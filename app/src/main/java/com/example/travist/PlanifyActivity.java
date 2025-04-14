@@ -16,6 +16,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.android.volley.AuthFailureError;
@@ -38,9 +40,9 @@ public class PlanifyActivity extends AppCompatActivity {
     private String token;
     private Button saveBtn;
     private ViewPager2 viewPager2;
-    private SliderAdapter adapter;
+    private SliderAdapter sliderAdapter;
+    private SelectedKeypointsAdapter selectedKpAdapter;
     private List<SliderItem> sliderItems = new ArrayList<>();
-
     UserSession session = UserSession.getInstance();
     int currentUserId = session.getUserId();
 
@@ -65,6 +67,7 @@ public class PlanifyActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_planify);
 
+
         // Gestion des insets pour l'edge to edge
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -72,18 +75,29 @@ public class PlanifyActivity extends AppCompatActivity {
             return insets;
         });
 
+
         // Initialisation UI
         viewPager2 = findViewById(R.id.viewPagerImageSlider);
         saveBtn = findViewById(R.id.saveNewTravelBtn);
 
-        // Initialisation de l'adapter
-        adapter = new SliderAdapter(sliderItems, kpId -> {
+
+        // RecyclerView pour les lieux sélectionnés
+        RecyclerView rvSelectedKp = findViewById(R.id.recyclerSelectedKeypoints);
+        rvSelectedKp.setLayoutManager(new LinearLayoutManager(this));
+
+        selectedKpAdapter = new SelectedKeypointsAdapter(KpListHolder.selectedKeypoints);
+        rvSelectedKp.setAdapter(selectedKpAdapter);
+
+
+        // Initialisation de l'adapter du carrousel
+        sliderAdapter = new SliderAdapter(sliderItems, kpId -> {
             Intent intent = new Intent(PlanifyActivity.this, KeypointDetailsActivity.class);
             intent.putExtra("token", token);
             intent.putExtra("kpId", kpId);
             startActivity(intent);
         });
-        viewPager2.setAdapter(adapter);
+        viewPager2.setAdapter(sliderAdapter);
+
 
         // Initialisation Volley
         rq = Volley.newRequestQueue(this);
@@ -91,15 +105,19 @@ public class PlanifyActivity extends AppCompatActivity {
         token = i.getStringExtra("token");
         Log.i("HELLOJWT", "token " + token);
 
+
         // Appel du WebService pour récupérer les keypoints
         requestDetails();
+
 
         // Instanciation du TravelDatabaseHelper
         travelDbHelper = new TravelDatabaseHelper(this);
 
+
         // Référence à l'EditText et à la TextView pour les prix
         EditText etPeopleNumber = findViewById(R.id.etPeopleNumber);
         TextView tvTotalPrice = findViewById(R.id.tvTotalPrice);
+
 
         // Ajout du TextWatcher pour mettre à jour le prix total dès la modification de la valeur
         etPeopleNumber.addTextChangedListener(new android.text.TextWatcher() {
@@ -199,7 +217,8 @@ public class PlanifyActivity extends AppCompatActivity {
                     tvTotalPrice.setText(KpListHolder.calculateTotalPrice(peopleNumber) + "€");
                 }
 
-                adapter.notifyDataSetChanged();
+                sliderAdapter.notifyDataSetChanged();
+                selectedKpAdapter.notifyDataSetChanged();
             }
         } catch (JSONException x) {
             handleError("JSON PARSE ERROR: " + response, "Erreur de traitement des données JSON");
