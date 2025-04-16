@@ -23,6 +23,11 @@ import com.android.volley.toolbox.Volley;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.osmdroid.config.Configuration;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Polyline;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +41,7 @@ public class TravelDetailsActivity extends AppCompatActivity {
     TextView tvStartDate;
     TextView tvEndDate;
     RecyclerView rvKpTravelDetails;
+    private MapView mapView;
 
     private TravelDatabaseHelper travelDbHelper;
     private List<Keypoint> keypointList = new ArrayList<>();
@@ -53,6 +59,11 @@ public class TravelDetailsActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        // Initialisation osmdroid
+        Configuration.getInstance().setUserAgentValue(getPackageName());
+        mapView = findViewById(R.id.mapView);
+        mapView.setMultiTouchControls(true);
 
         tvTravelName = findViewById(R.id.tvTravelDetailsName);
         tvNbPeople = findViewById(R.id.tvNbPeopleTravelDetails);
@@ -82,6 +93,18 @@ public class TravelDetailsActivity extends AppCompatActivity {
         fetchKeypointsForTravel(currentTravel.id);
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        mapView.onResume(); // <- important
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mapView.onPause(); // <- important
+    }
+
     private void fetchKeypointsForTravel(int travelId) {
         String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getKeypointsByTravel/" + travelId;
         RequestQueue queue = Volley.newRequestQueue(this);
@@ -90,7 +113,13 @@ public class TravelDetailsActivity extends AppCompatActivity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
+                        // Ajout des marqueurs et du tracé
+                        List<GeoPoint> geoPoints = new ArrayList<>();
+
                         try {
+                            // Nettoyage carte
+                            mapView.getOverlays().clear();
+
                             JSONArray jsonArray = new JSONArray(response);
                             keypointList.clear();
                             for (int i = 0; i < jsonArray.length(); i++) {
@@ -111,6 +140,29 @@ public class TravelDetailsActivity extends AppCompatActivity {
                                 Keypoint kp = new Keypoint(id, name, price, startDate, endDate, cover, gpsX, gpsY, is_altered, cityId);
                                 kp.setCityName(cityName);
                                 keypointList.add(kp);
+
+                                GeoPoint point = new GeoPoint(kp.gpsX, kp.gpsY);
+                                geoPoints.add(point);
+
+                                Marker marker = new Marker(mapView);
+                                marker.setPosition(point);
+                                marker.setTitle(kp.name);
+                                marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                                mapView.getOverlays().add(marker);
+
+                                // Tracer le trajet
+                                Polyline polyline = new Polyline();
+                                polyline.setPoints(geoPoints);
+                                mapView.getOverlays().add(polyline);
+
+                                // Centrer la carte sur le premier point
+                                if (!geoPoints.isEmpty()) {
+                                    mapView.getController().setZoom(12.0);
+                                    mapView.getController().setCenter(geoPoints.get(0));
+                                }
+
+                                // Mise à jour de la vue
+                                mapView.invalidate();
                             }
                             kpAdapter.notifyDataSetChanged();
                         } catch (JSONException e) {
