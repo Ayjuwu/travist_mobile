@@ -19,6 +19,9 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
+            android:name=".TravelDetailsActivity"
+            android:exported="false" />
+        <activity
             android:name=".KeypointDetailsActivity"
             android:exported="false" />
         <activity
