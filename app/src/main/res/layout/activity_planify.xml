@@ -8,7 +8,7 @@
     android:background="#050529"
     tools:context=".PlanifyActivity">
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         tools:ignore="MissingConstraints">
@@ -47,8 +47,6 @@
                 android:orientation="vertical"
                 android:padding="20dp">
 
-
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -64,7 +62,7 @@
                         android:textSize="16dp" />
 
                     <TextView
-                        android:id="@+id/single_budget"
+                        android:id="@+id/tvIndividualPrice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="5dp"
@@ -89,7 +87,7 @@
                         android:textSize="16dp" />
 
                     <TextView
-                        android:id="@+id/total_budget"
+                        android:id="@+id/tvTotalPrice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="5dp"
@@ -103,59 +101,97 @@
                     android:layout_width="match_parent"
                     android:layout_height="15dp"></Space>
 
-                <EditText
-                    android:id="@+id/editTextText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ems="10"
-                    android:inputType="text"
-                    android:text="Nom du voyage" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
 
-                <EditText
-                    android:id="@+id/editTextText2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ems="10"
-                    android:inputType="text"
-                    android:text="Nombre de voyageurs" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Nom du voyage : "
+                        android:textColor="#dddefa"
+                        android:fontFamily="sans-serif-condensed"
+                        android:textSize="18dp" />
+
+                    <!-- EditText pour le nom du voyage -->
+                    <EditText
+                        android:id="@+id/etTravelName"
+                        android:layout_width="250dp"
+                        android:layout_height="wrap_content"
+                        android:textColor="#fafafa"
+                        android:ems="10"
+                        android:inputType="text" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Nombre de voyageurs : "
+                        android:textColor="#dddefa"
+                        android:fontFamily="sans-serif-condensed"
+                        android:textSize="18dp" />
+
+                    <!-- EditText pour le nombre de voyageurs -->
+                    <EditText
+                        android:id="@+id/etPeopleNumber"
+                        android:layout_width="250dp"
+                        android:layout_height="wrap_content"
+                        android:textColor="#fafafa"
+                        android:ems="10"
+                        android:inputType="number"
+                        android:text="1"/>
+
+                </LinearLayout>
 
                 <Space
                     android:layout_width="match_parent"
                     android:layout_height="15dp" />
 
+<!--                <com.google.android.material.textfield.TextInputLayout-->
+<!--                    android:id="@+id/searchInputLayout"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="match_parent">-->
+
+<!--                    <com.google.android.material.textfield.TextInputEditText-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:background="@drawable/frame_border_container"-->
+<!--                        android:hint="Rechercher un lieu..." />-->
+
+<!--                </com.google.android.material.textfield.TextInputLayout>-->
+
                 <Space
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="25dp" />
 
-                <com.google.android.material.textfield.TextInputLayout
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    xmlns:android="http://schemas.android.com/apk/res/android"
+                    xmlns:app="http://schemas.android.com/apk/res-auto"
+                    android:id="@+id/carouselLayout"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent">
 
-                    <com.google.android.material.textfield.TextInputEditText
+                    <androidx.viewpager2.widget.ViewPager2
+                        android:id="@+id/viewPagerImageSlider"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/frame_border_container"
-                        android:hint="Rechercher un lieu..." />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp">
-
-                </LinearLayout>
-
-                <androidx.viewpager2.widget.ViewPager2
-                    android:id="@+id/viewPagerImageSlider"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:layout_marginBottom="10dp"
-                    android:paddingStart="40dp"
-                    android:paddingEnd="40dp"/>
+                        android:layout_height="250dp"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"/>
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
             </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerSelectedKeypoints"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
 
             <Button
                 android:id="@+id/saveNewTravelBtn"
@@ -176,6 +212,6 @@
                 android:layout_height="15dp" />
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

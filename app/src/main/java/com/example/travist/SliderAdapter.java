@@ -1,44 +1,48 @@
 package com.example.travist;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 
-import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager2.widget.ViewPager2;
-
-import com.makeramen.roundedimageview.RoundedImageView;
 
 import java.util.List;
 
 public class SliderAdapter extends RecyclerView.Adapter<SliderAdapter.SliderViewHolder> {
 
     private List<SliderItem> sliderItems;
-    private ViewPager2 viewPager2;
+    private OnItemClickListener listener;
 
-    SliderAdapter(List<SliderItem> sliderItems, ViewPager2 viewPager2) {
+    // Constructeur qui prend la liste et le listener pour le clic
+    public SliderAdapter(List<SliderItem> sliderItems, OnItemClickListener listener) {
         this.sliderItems = sliderItems;
-        this.viewPager2 = viewPager2;
-    }
-
-    @NonNull
-    @Override
-    public SliderViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new SliderViewHolder(
-                LayoutInflater.from(parent.getContext()).inflate(
-                        R.layout.single_point_container,
-                        parent,false
-                )
-        );
+        this.listener = listener;
     }
 
     @Override
-    public void onBindViewHolder(@NonNull SliderViewHolder holder, int position) {
-        holder.setImage(sliderItems.get(position));
-        if(position == sliderItems.size() - 2) {
-            viewPager2.post(runnable);
-        }
+    public SliderViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.kp_cover_item, parent, false);
+        return new SliderViewHolder(itemView);
+    }
+
+    @Override
+    public void onBindViewHolder(SliderViewHolder holder, int position) {
+        SliderItem currentItem = sliderItems.get(position);
+
+        byte[] decodedBytes = Base64.decode(currentItem.getImageUrl(), Base64.DEFAULT);
+        Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+        holder.imageView.setImageBitmap(bitmap);
+
+        // On définit le listener du clic sur l'image
+        holder.imageView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onItemClick(currentItem.getKpId());
+            }
+        });
     }
 
     @Override
@@ -46,23 +50,22 @@ public class SliderAdapter extends RecyclerView.Adapter<SliderAdapter.SliderView
         return sliderItems.size();
     }
 
-    class SliderViewHolder extends RecyclerView.ViewHolder {
-        private RoundedImageView imageView;
-        SliderViewHolder(@NonNull View itemView) {
+    public static class SliderViewHolder extends RecyclerView.ViewHolder {
+        ImageView imageView;
+
+        public SliderViewHolder(View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.imageSlide);
         }
-
-        void setImage(SliderItem sliderItem) {
-            imageView.setImageResource(sliderItem.getImage());
-        }
     }
 
-    private Runnable runnable = new Runnable() {
-        @Override
-        public void run() {
-            sliderItems.addAll(sliderItems);
-            notifyDataSetChanged();
-        }
-    };
+    public void setFilteredList(List<SliderItem> filteredList) {
+        this.sliderItems = filteredList;
+        notifyDataSetChanged();
+    }
+
+    // Interface pour gérer le clic sur un item
+    public interface OnItemClickListener {
+        void onItemClick(int kpId);
+    }
 }
