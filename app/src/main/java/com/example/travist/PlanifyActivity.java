@@ -30,9 +30,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class PlanifyActivity extends AppCompatActivity {
@@ -45,6 +49,8 @@ public class PlanifyActivity extends AppCompatActivity {
     private List<SliderItem> sliderItems = new ArrayList<>();
     UserSession session = UserSession.getInstance();
     int currentUserId = session.getUserId();
+    public static Map<Integer, String> visitStartDates = new HashMap<>();
+    public static Map<Integer, String> visitEndDates = new HashMap<>();
 
     private final Handler sliderHandler = new Handler();
     private final Runnable sliderRunnable = new Runnable() {
@@ -85,29 +91,31 @@ public class PlanifyActivity extends AppCompatActivity {
         rvSelectedKp.setLayoutManager(new LinearLayoutManager(this));
 
         // Utilisation de la variable d'instance existante pour l'adaptateur
-        selectedKpAdapter = new SelectedKeypointsAdapter(KpListHolder.selectedKeypoints, new SelectedKeypointsAdapter.OnItemRemoveListener() {
+        selectedKpAdapter = new SelectedKeypointsAdapter(
+                new SelectedKeypointsAdapter.OnItemRemoveListener() {
+                    @Override
+                    public void onRemove(Keypoint kp) {
+                        KpListHolder.selectedKeypoints.remove(kp);
+                        visitStartDates.remove(kp.id);
+                        visitEndDates.remove(kp.id);
+                        requestDetails();
+                        selectedKpAdapter.notifyDataSetChanged();
 
-            @Override
-            public void onRemove(Keypoint kp) {
-                KpListHolder.selectedKeypoints.remove(kp);
-                requestDetails();
-                selectedKpAdapter.notifyDataSetChanged();
-
-                // Ajout dans le carrousel si pas déjà présent
-                boolean alreadyInSlider = false;
-                for (SliderItem item : sliderItems) {
-                    if (item.getKpId() == kp.id) {
-                        alreadyInSlider = true;
-                        break;
+                        // Ajout dans le carrousel si pas déjà présent
+                        boolean alreadyInSlider = false;
+                        for (SliderItem item : sliderItems) {
+                            if (item.getKpId() == kp.id) {
+                                alreadyInSlider = true;
+                                break;
+                            }
+                        }
+                        if (!alreadyInSlider) {
+                            sliderItems.add(new SliderItem(kp.id, kp.cover));
+                            sliderAdapter.notifyDataSetChanged();
+                        }
                     }
                 }
-                if (!alreadyInSlider) {
-                    sliderItems.add(new SliderItem(kp.id, kp.cover));
-                    sliderAdapter.notifyDataSetChanged();
-                }
-            }
-        });
-
+        );
         rvSelectedKp.setAdapter(selectedKpAdapter);
 
 
@@ -300,8 +308,7 @@ public class PlanifyActivity extends AppCompatActivity {
                 return;
             }
 
-            // Gestion des erreurs pour la conversion du nombre de voyageurs
-            int peopleNumber = 1;
+            int peopleNumber;
             try {
                 peopleNumber = Integer.parseInt(peopleNumberStr);
             } catch (NumberFormatException e) {
@@ -314,76 +321,128 @@ public class PlanifyActivity extends AppCompatActivity {
                 return;
             }
 
-            // Récupération des keypoints sélectionnés depuis le singleton
             List<Keypoint> selectedKeypointsList = KpListHolder.selectedKeypoints;
             if (selectedKeypointsList == null || selectedKeypointsList.isEmpty()) {
                 handleError("Vous n'avez pas sélectionné de keypoints !", "Vous n'avez pas sélectionné de keypoints !");
                 return;
             }
 
-            // Initialisation des variables de date et de prix
-            String earliestDate = null;
-            String latestDate = null;
-            float individualPrice = 0f;
-            float totalPrice = 0f;
-
-            // Calcul de la date la plus tôt et la date la plus tard, et calcul des prix
+            // Synchronisation des dates sélectionnées
+            // Pour chaque keypoint, on met à jour ses dates à partir des maps statiques
             for (Keypoint kp : selectedKeypointsList) {
-                individualPrice += kp.price;
-                totalPrice += kp.price * peopleNumber;
-
-                String kpStart = kp.startDate;
-                String kpEnd = kp.endDate;
-
-                if (earliestDate == null || kpStart.compareTo(earliestDate) < 0) {
-                    earliestDate = kpStart;
+                String selectedStartDate = SelectedKeypointsAdapter.visitStartDates.get(kp.id);
+                String selectedEndDate = SelectedKeypointsAdapter.visitEndDates.get(kp.id);
+                if (selectedStartDate != null && !selectedStartDate.isEmpty()) {
+                    kp.startDate = selectedStartDate;
                 }
-                if (latestDate == null || kpEnd.compareTo(latestDate) > 0) {
-                    latestDate = kpEnd;
+                if (selectedEndDate != null && !selectedEndDate.isEmpty()) {
+                    kp.endDate = selectedEndDate;
                 }
             }
 
-            // Création du JSON à envoyer
+            // Vérification individuelle des dates pour chaque keypoint
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            try {
+                for (Keypoint kp : selectedKeypointsList) {
+                    Date start = sdf.parse(kp.startDate);
+                    Date end = sdf.parse(kp.endDate);
+                    // Vérifier que la date de début est strictement antérieure à la date de fin
+                    if (start != null && end != null && !start.before(end)) {
+                        handleError("La date de début du lieu \"" + kp.name + "\" doit être avant sa date de fin.",
+                                "Veuillez corriger les dates pour " + kp.name);
+                        return;
+                    }
+                }
+            } catch (ParseException e) {
+                e.printStackTrace();
+                handleError("Erreur de format de date", "Vérifiez les dates sélectionnées pour chaque lieu.");
+                return;
+            }
+
+            // Vérification des chevauchements
+            try {
+                for (int i = 0; i < selectedKeypointsList.size(); i++) {
+                    Keypoint kp1 = selectedKeypointsList.get(i);
+                    Date s1 = sdf.parse(kp1.startDate);
+                    Date e1 = sdf.parse(kp1.endDate);
+                    for (int j = i + 1; j < selectedKeypointsList.size(); j++) {
+                        Keypoint kp2 = selectedKeypointsList.get(j);
+                        Date s2 = sdf.parse(kp2.startDate);
+                        Date e2 = sdf.parse(kp2.endDate);
+                        // Considérons qu'il n'y a pas de chevauchement si e1 est avant ou égal à s2 ou e2 est avant ou égal à s1.
+                        if (!(e1.before(s2) || e1.equals(s2) || e2.before(s1) || e2.equals(s1))) {
+                            handleError("Les dates du keypoint '" + kp1.name + "' chevauchent celles du keypoint '" + kp2.name + "'.",
+                                    "Veuillez choisir des dates non chevauchantes.");
+                            return;
+                        }
+                    }
+                }
+            } catch (ParseException ex) {
+                ex.printStackTrace();
+                handleError("Erreur de format de date", "Vérifiez le format des dates sélectionnées.");
+                return;
+            }
+            // --------------------------------------------------------
+
+            // -------- Calcul des prix et des dates globales --------
+            float individualPrice = 0f;
+            float totalPrice = 0f;
+            Date earliestDate = null;
+            Date latestDate = null;
+            try {
+                for (Keypoint kp : selectedKeypointsList) {
+                    individualPrice += kp.price;
+                    totalPrice += kp.price * peopleNumber;
+
+                    Date currentStart = sdf.parse(kp.startDate);
+                    Date currentEnd = sdf.parse(kp.endDate);
+                    if (earliestDate == null || currentStart.before(earliestDate)) {
+                        earliestDate = currentStart;
+                    }
+                    if (latestDate == null || currentEnd.after(latestDate)) {
+                        latestDate = currentEnd;
+                    }
+                }
+            } catch (ParseException e) {
+                e.printStackTrace();
+                handleError("Erreur de format de date", "Les dates sélectionnées sont invalides.");
+                return;
+            }
+            // --------------------------------------------------------
+
+            // Création de l'objet JSON
             JSONObject travelData = new JSONObject();
             try {
                 travelData.put("travel_name", travelName);
                 travelData.put("people_number", peopleNumber);
                 travelData.put("individual_price", individualPrice);
                 travelData.put("total_price", totalPrice);
-                travelData.put("travel_start_date", earliestDate);
-                travelData.put("travel_end_date", latestDate);
-
-                // Ajouter l'ID de l'utilisateur
+                travelData.put("travel_start_date", sdf.format(earliestDate));
+                travelData.put("travel_end_date", sdf.format(latestDate));
                 travelData.put("user_id", currentUserId);
-
-                // Log des données envoyées pour debug
-                Log.i("HELLOJWT", "Données envoyées : " + travelData.toString());
             } catch (JSONException e) {
                 e.printStackTrace();
                 KpListHolder.resetKeypoints();
                 return;
             }
 
+            Log.i("HELLOJWT", "Données envoyées : " + travelData.toString());
+
             String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/createTravel";
 
-            // Création de la requête POST avec Volley
             StringRequest postRequest = new StringRequest(Request.Method.POST, url,
                     response -> {
                         try {
                             JSONObject jsonResponse = new JSONObject(response);
                             Log.i("HELLOJWT", "Réponse JSON: " + response);
                             boolean success = jsonResponse.optBoolean("success", false);
-                            Log.i("HELLOJWT", "Success value: " + success);
 
-                            if (jsonResponse.has("success") && jsonResponse.optBoolean("success", false)) {
-                                // Extraction correcte de l'ID du voyage depuis la réponse
+                            if (success) {
                                 JSONObject tData = jsonResponse.optJSONObject("data");
                                 if (tData != null) {
                                     int newTravelId = tData.optJSONObject("travel").optInt("id", -1);
                                     Log.i("HELLOJWT", "ID du voyage créé : " + newTravelId);
-
                                     if (newTravelId != -1) {
-                                        // Appeler insertAssigned pour lier les keypoints au voyage
                                         insertAssigned(newTravelId, selectedKeypointsList);
                                         handleSuccess("Voyage créé avec succès !", "Voyage créé avec succès !");
                                     } else {
@@ -428,16 +487,35 @@ public class PlanifyActivity extends AppCompatActivity {
     private void insertAssigned(int travelId, List<Keypoint> keypoints) {
         JSONObject assignedData = new JSONObject();
         try {
-            // Ajouter l'ID du voyage et les keypoints dans le JSON
+            // Ajouter l'ID du voyage
             assignedData.put("travel_id", travelId);
+
+            // Ajouter les keypoints associés avec leurs dates
             JSONArray keypointsArray = new JSONArray();
             for (Keypoint kp : keypoints) {
+                // Récupérer les dates depuis les maps
+                String start = visitStartDates.get(kp.id);
+                String end = visitEndDates.get(kp.id);
+
+                // Si aucune date n'est renseignée dans la map, on prend les dates de base du keypoint
+                if (start == null || start.isEmpty()) {
+                    start = kp.startDate;
+                    visitStartDates.put(kp.id, start);
+                }
+                if (end == null || end.isEmpty()) {
+                    end = kp.endDate;
+                    visitEndDates.put(kp.id, end);
+                }
+
+                Log.d("ASSIGN_DEBUG", "Keypoint ID: " + kp.id + " Start: " + start + " End: " + end);
+
                 JSONObject keypointObj = new JSONObject();
                 keypointObj.put("keypoint_id", kp.id);
-                keypointObj.put("start_date", kp.startDate);
-                keypointObj.put("end_date", kp.endDate);
+                keypointObj.put("start_date", start);
+                keypointObj.put("end_date", end);
                 keypointsArray.put(keypointObj);
             }
+
             assignedData.put("keypoints", keypointsArray);
             Log.i("HELLOJWT", "Données envoyées pour assignation : " + assignedData.toString());
         } catch (JSONException e) {
@@ -455,7 +533,6 @@ public class PlanifyActivity extends AppCompatActivity {
                         Log.i("HELLOJWT", "Réponse assignation keypoints : " + response);
                         if (jsonResponse.optBoolean("success", false)) {
                             Toast.makeText(PlanifyActivity.this, "Lieux assignés avec succès", Toast.LENGTH_SHORT).show();
-                            // Une fois l'assignation réussie, vous pouvez lancer l'activité suivante.
                             Intent intent = new Intent(PlanifyActivity.this, Profile.class);
                             intent.putExtra("token", token);
                             startActivity(intent);
@@ -493,6 +570,7 @@ public class PlanifyActivity extends AppCompatActivity {
 
         rq.add(postRequest);
     }
+
 
     // On vérifie si un voyage avec le même nom existe déjà dans la base de données
     private void isTravelNameExists(OnTravelNameCheckListener listener) {
