@@ -2,6 +2,8 @@ package com.example.travist;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -13,6 +15,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -30,16 +33,20 @@ import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Polyline;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TravelDetailsActivity extends AppCompatActivity {
     String token;
+    RequestQueue rq;
     TextView tvTravelName;
     TextView tvNbPeople;
     TextView tvIndividualPrice;
     TextView tvTotalPrice;
     TextView tvStartDate;
     TextView tvEndDate;
+    Button deleteTravelBtn;
     RecyclerView rvKpTravelDetails;
     private MapView mapView;
 
@@ -53,12 +60,13 @@ public class TravelDetailsActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_travel_details);
 
-        // Appliquer le padding lié aux system bars
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        rq = Volley.newRequestQueue(this);
 
         // Initialisation osmdroid
         Configuration.getInstance().setUserAgentValue(getPackageName());
@@ -72,6 +80,7 @@ public class TravelDetailsActivity extends AppCompatActivity {
         tvStartDate = findViewById(R.id.tvStartDateTravelDetails);
         tvEndDate = findViewById(R.id.tvEndDateTravelDetails);
         rvKpTravelDetails = findViewById(R.id.rvKpTravelDetails);
+        deleteTravelBtn = findViewById(R.id.deleteTravelBtn);  // Récupération du bouton
 
         // Configuration du RecyclerView
         rvKpTravelDetails.setLayoutManager(new LinearLayoutManager(this));
@@ -91,18 +100,67 @@ public class TravelDetailsActivity extends AppCompatActivity {
         tvEndDate.setText(currentTravel.endDate);
 
         fetchKeypointsForTravel(currentTravel.id);
+
+        // Mise en place du listener pour le bouton de suppression
+        deleteTravelBtn.setOnClickListener(view -> {
+            // Appel de la méthode de suppression
+            deleteTravel(currentTravel.id);
+        });
+    }
+
+    // Méthode pour déclencher la suppression du voyage
+    public void deleteTravel(int travelId) {
+        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/deleteTravel/" + travelId;
+
+        StringRequest req = new StringRequest(Request.Method.DELETE, url,
+                this::processCurrentTravelDeletion,
+                this::handleErrors
+        ) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
+            }
+        };
+
+        rq.add(req);
+    }
+
+    public void processCurrentTravelDeletion(String response) {
+        try {
+            JSONObject json = new JSONObject(response);
+            boolean success = json.getBoolean("success");
+
+            if (success) {
+                Toast.makeText(this, "Voyage supprimé avec succès", Toast.LENGTH_SHORT).show();
+
+                // Retour au profil ou autre action
+                Intent intent = new Intent(this, Profile.class);
+                intent.putExtra("token", token);
+                startActivity(intent);
+                finish(); // pour que cette activité ne reste pas dans la pile
+            } else {
+                Toast.makeText(this, "Erreur lors de la suppression", Toast.LENGTH_SHORT).show();
+            }
+
+        } catch (JSONException e) {
+            Toast.makeText(this, "Erreur de réponse", Toast.LENGTH_SHORT).show();
+            Log.e("DELETE_TRAVEL", "Réponse mal formée : " + response, e);
+        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        mapView.onResume(); // <- important
+        mapView.onResume();
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        mapView.onPause(); // <- important
+        mapView.onPause();
     }
 
     private void fetchKeypointsForTravel(int travelId) {
@@ -178,5 +236,10 @@ public class TravelDetailsActivity extends AppCompatActivity {
             }
         });
         queue.add(request);
+    }
+
+    public void handleErrors(Throwable t) {
+        Toast.makeText(this, "SERVERSIDE PROBLEM", Toast.LENGTH_LONG).show();
+        Log.e("HELLOJWT", "SERVERSIDE BUG", t);
     }
 }

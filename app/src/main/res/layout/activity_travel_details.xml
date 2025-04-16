@@ -223,7 +223,7 @@
                     app:layout_constraintStart_toStartOf="parent">
 
                     <Button
-                        android:id="@+id/saveModifyTravelBtn"
+                        android:id="@+id/modifyTravelBtn"
                         android:layout_width="wrap_content"
                         android:layout_height="50dp"
                         android:layout_marginTop="30dp"
@@ -242,7 +242,7 @@
                         android:layout_weight="1" />
 
                     <Button
-                        android:id="@+id/saveNewTravelBtn"
+                        android:id="@+id/deleteTravelBtn"
                         android:layout_width="wrap_content"
                         android:layout_height="50dp"
                         android:layout_marginTop="30dp"

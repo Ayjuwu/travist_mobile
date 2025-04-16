@@ -120,16 +120,24 @@ public class Profile extends AppCompatActivity {
             TextView tvNoTravel = findViewById(R.id.noTravelTextView);
             ImageView ivNoTravel = findViewById(R.id.noTravelImageView);
 
-            if(jsonArray.length() == 0) {
+            if (jsonArray.length() == 0) {
                 tvNoTravel.setText("Vous n'avez aucun trajet planifié");
                 ivNoTravel.setImageResource(R.drawable.no_travel_icon);
 
-                ViewGroup.LayoutParams params = ivNoTravel.getLayoutParams();
-                params.width = 600;
-                params.height = 400;
+                // Assurer la visibilité de l'image et du texte
+                tvNoTravel.setVisibility(View.VISIBLE);
+                ivNoTravel.setVisibility(View.VISIBLE);
 
+                // Modifier la taille de l'icône
+                ViewGroup.LayoutParams params = ivNoTravel.getLayoutParams();
+                params.width = 600; // Ajuster à ta taille souhaitée
+                params.height = 400; // Ajuster à ta taille souhaitée
                 ivNoTravel.setLayoutParams(params);
             } else {
+                // On cache le message et l'icône si des voyages existent
+                tvNoTravel.setVisibility(View.GONE);
+                ivNoTravel.setVisibility(View.GONE);
+
                 // On vide la liste au cas où il y aurait déjà des données
                 travelList.clear();
 
@@ -162,7 +170,6 @@ public class Profile extends AppCompatActivity {
             Log.e("HELLOJWT", "JSON PARSE ERROR: " + response, e);
         }
     }
-
 
     public void handleErrors(Throwable t) {
         Toast.makeText(this, "SERVERSIDE PROBLEM", Toast.LENGTH_LONG).show();
