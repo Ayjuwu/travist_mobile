@@ -20,7 +20,7 @@
             tools:layout_editor_absoluteY="73dp" />
 
         <Button
-            android:id="@+id/btnTravelName"
+            android:id="@+id/btnTravelDetails"
             android:layout_width="350dp"
             android:layout_height="80dp"
             android:backgroundTint="#323364"

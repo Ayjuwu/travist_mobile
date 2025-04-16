@@ -1,5 +1,6 @@
 package com.example.travist;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -33,10 +34,12 @@ public class Profile extends AppCompatActivity {
     RequestQueue rq;
     String token;
     Button planifyBtn;
+    Button travelDetailsBtn;
     RecyclerView recyclerView;
     TravelAdapter adapter;
     List<Travel> travelList = new ArrayList<>();
 
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -149,7 +152,7 @@ public class Profile extends AppCompatActivity {
 
                 // Mettre à jour la RecyclerView sur le thread principal (mieux que thread de fond).
                 runOnUiThread(() -> {
-                    adapter = new TravelAdapter(travelList);
+                    adapter = new TravelAdapter(travelList, token);
                     recyclerView.setLayoutManager(new LinearLayoutManager(this));
                     recyclerView.setAdapter(adapter);
                 });
