@@ -1,6 +1,8 @@
 package com.example.travist;
 
-public class Travel {
+import java.io.Serializable;
+
+public class Travel implements Serializable {
     public int id;
     public String name;
     public int peopleNumber;
@@ -10,8 +12,8 @@ public class Travel {
     public String endDate;
     public int userId;
 
-    public Travel(int id, String name, int peopleNumber, float individualPrice, float totalPrice,
-                  String startDate, String endDate, int userId) {
+    public Travel(int id, String name, int peopleNumber, float individualPrice,
+                  float totalPrice, String startDate, String endDate, int userId) {
         this.id = id;
         this.name = name;
         this.peopleNumber = peopleNumber;

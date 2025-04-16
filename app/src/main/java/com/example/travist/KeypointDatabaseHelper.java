@@ -74,4 +74,3 @@ public class KeypointDatabaseHelper extends SQLiteOpenHelper {
         return db.rawQuery("SELECT * FROM " + TABLE, null);
     }
 }
-
