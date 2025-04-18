@@ -1,5 +1,6 @@
 package com.example.travist;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
@@ -12,7 +13,6 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
@@ -23,11 +23,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-public class TagsListActivity extends AppCompatActivity {
+public class TagsListActivity extends AppCompatActivity implements TagAdapter.OnTagActionListener {
 
     RequestQueue rq;
     RecyclerView rvTags;
@@ -53,45 +51,65 @@ public class TagsListActivity extends AppCompatActivity {
         rvTags = findViewById(R.id.rvTags);
         rvTags.setLayoutManager(new LinearLayoutManager(this));
 
-        tagAdapter = new TagAdapter(tagList);
+        tagAdapter = new TagAdapter(tagList, this);
         rvTags.setAdapter(tagAdapter);
 
         requestTags();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        requestTags();
+    }
+
+
     private void requestTags() {
         String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTags";
-
-        StringRequest req = new StringRequest(Request.Method.GET, url, this::processTags, this::handleErrors) {
-            @Override
-            public Map<String, String> getHeaders() throws AuthFailureError {
-                return new HashMap<>();
-            }
-        };
-
+        StringRequest req = new StringRequest(Request.Method.GET, url,
+                this::processTags,
+                err -> Toast.makeText(this, "Erreur réseau", Toast.LENGTH_SHORT).show()
+        );
         rq.add(req);
     }
 
     private void processTags(String response) {
         try {
-            JSONArray jsonArray = new JSONArray(response);
-
-            if (jsonArray.length() != 0) {
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    JSONObject tag = jsonArray.getJSONObject(i);
-
-                    int tagId = tag.getInt("id");
-                    String tagName = tag.getString("tag_name");
-
-                    Tag t = new Tag(tagId, tagName);
-                    tagList.add(t);
-                }
-
-                tagAdapter.notifyDataSetChanged();
+            JSONArray arr = new JSONArray(response);
+            tagList.clear();
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject o = arr.getJSONObject(i);
+                tagList.add(new Tag(
+                        o.getInt("id"),
+                        o.getString("tag_name")
+                ));
             }
-        } catch (JSONException x) {
-            handleError("JSON PARSE ERROR: " + response, "Erreur de traitement des données JSON");
+            tagAdapter.notifyDataSetChanged();
+        } catch (JSONException e) {
+            Toast.makeText(this, "Erreur JSON", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    @Override
+    public void onModify(Tag tag) {
+        Intent intent = new Intent(this, ModifyTagActivity.class);
+        intent.putExtra("tagId", tag.id);
+        intent.putExtra("tagName", tag.name);
+        startActivity(intent);
+    }
+
+    @Override
+    public void onDelete(Tag tag) {
+        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/deleteTag/" + tag.id;
+        StringRequest req = new StringRequest(Request.Method.DELETE, url,
+                response -> {
+                    tagList.remove(tag);
+                    tagAdapter.notifyDataSetChanged();
+                    Toast.makeText(this, "Tag supprimé", Toast.LENGTH_SHORT).show();
+                },
+                error -> Toast.makeText(this, "Erreur suppression", Toast.LENGTH_SHORT).show()
+        );
+        rq.add(req);
     }
 
     private void handleErrors(Throwable t) {

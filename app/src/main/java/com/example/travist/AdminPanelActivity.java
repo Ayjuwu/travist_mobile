@@ -61,7 +61,7 @@ public class AdminPanelActivity extends AppCompatActivity {
 
         addNewTagBtn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
-                Intent intent = new Intent(AdminPanelActivity.this, PlanifyTravelActivity.class);
+                Intent intent = new Intent(AdminPanelActivity.this, CreateTagActivity.class);
                 startActivity(intent);
             }
         });
