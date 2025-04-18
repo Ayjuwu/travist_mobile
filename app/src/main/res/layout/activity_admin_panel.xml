@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#050529"
-    tools:context=".MainActivity">
+    tools:context=".AdminPanelActivity">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -52,65 +52,92 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-condensed"
-                    android:text="Bienvenue "
+                    android:text="Bienvenue sur le panel administrateur"
+                    android:textAlignment="center"
                     android:textAllCaps="true"
                     android:textColor="#dddefa"
                     android:textSize="30dp"
                     app:layout_constraintTop_toBottomOf="@+id/toolbar" />
 
-                <TextView
-                    android:id="@+id/tvPseudo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-condensed"
-                    android:textAllCaps="true"
-                    android:textColor="#dddefa"
-                    android:textSize="30dp"
-                    android:text="" />
             </LinearLayout>
 
-            <ImageView
-                android:id="@+id/noTravelImageView"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_marginTop="10dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.495"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/planifyTravelBtn"
-                tools:ignore="MissingConstraints" />
-
-            <TextView
-                android:id="@+id/noTravelTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text=""
-                android:textAlignment="center"
-                android:textColor="#9c9dac"
-                android:textSize="18dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.496"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/noTravelImageView" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-
-
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="30dp"></Space>
-
             <Button
-                android:id="@+id/planifyTravelBtn"
-                android:layout_width="wrap_content"
+                android:id="@+id/viewListKeypoints"
+                android:layout_width="200dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="30dp"
                 android:backgroundTint="#323364"
-                android:text="@string/planify_btn_text"
+                android:text="Voir la liste des lieux"
+                android:textColor="#dddefa"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.497"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/titleTextScreen"
+                tools:ignore="MissingConstraints" />
+
+            <Button
+                android:id="@+id/addNewKeypoint"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:backgroundTint="#323364"
+                android:text="Créer un nouveau lieu"
+                android:textColor="#dddefa"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.497"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/titleTextScreen"
+                tools:ignore="MissingConstraints" />
+
+            <Button
+                android:id="@+id/viewListTags"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:backgroundTint="#323364"
+                android:text="Voir la liste des tags"
+                android:textColor="#dddefa"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.497"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/titleTextScreen"
+                tools:ignore="MissingConstraints" />
+
+            <Button
+                android:id="@+id/addNewTag"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:backgroundTint="#323364"
+                android:text="Créer un nouveau tag"
+                android:textColor="#dddefa"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.497"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/titleTextScreen"
+                tools:ignore="MissingConstraints" />
+
+            <Button
+                android:id="@+id/viewListCities"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:backgroundTint="#323364"
+                android:text="Voir la liste des villes"
+                android:textColor="#dddefa"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.497"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/titleTextScreen"
+                tools:ignore="MissingConstraints" />
+
+            <Button
+                android:id="@+id/addNewCity"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:backgroundTint="#323364"
+                android:text="Voir la liste des lieux"
                 android:textColor="#dddefa"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.497"
@@ -123,9 +150,5 @@
                 android:layout_height="15dp" />
 
         </LinearLayout>
-
     </ScrollView>
-
-
-
 </androidx.constraintlayout.widget.ConstraintLayout>

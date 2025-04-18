@@ -53,25 +53,59 @@ public class MainActivity extends AppCompatActivity {
         }
         // String url="http://192.168.0.110/~mathys.raspolini/travist/public/api/login";
         String url="http://10.0.2.2/www/PPE_Travist/travist/public/api/login";
-        StringRequest req = new StringRequest(Request.Method.POST,url,this::processLoginRequest,this::handleErrors){
-            @Nullable
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                HashMap hm=new HashMap();
-                hm.put("user_email",mail);
-                hm.put("user_password",pw);
-                return hm;
-            }
-        };
-        rq.add(req);
+
+        if (mail.equals("admin@gmail.com")) {
+            StringRequest req = new StringRequest(Request.Method.POST,url,this::processLoginRequestAdmin,this::handleErrors){
+                @Nullable
+                @Override
+                protected Map<String, String> getParams() throws AuthFailureError {
+                    HashMap hm=new HashMap();
+                    hm.put("user_email",mail);
+                    hm.put("user_password",pw);
+                    return hm;
+                }
+            };
+            rq.add(req);
+
+        } else {
+            StringRequest req = new StringRequest(Request.Method.POST,url,this::processLoginRequestUser,this::handleErrors){
+                @Nullable
+                @Override
+                protected Map<String, String> getParams() throws AuthFailureError {
+                    HashMap hm=new HashMap();
+                    hm.put("user_email",mail);
+                    hm.put("user_password",pw);
+                    return hm;
+                }
+            };
+            rq.add(req);
+        }
     }
 
-    public void processLoginRequest(String response){
+    public void processLoginRequestUser(String response){
         try {
             JSONObject jo = new JSONObject(response);
             JSONObject joData=jo.getJSONObject("data");
             String token=joData.getString("token");
+
             Intent i=new Intent(this, Profile.class);
+            i.putExtra("token",token);
+            startActivity(i);
+        }
+        catch (JSONException x) {
+            Toast.makeText(this,"JSON PARSE ERROR",Toast.LENGTH_LONG);
+            Log.e("HELLOJWT",response);
+        }
+
+    }
+
+    public void processLoginRequestAdmin(String response){
+        try {
+            JSONObject jo = new JSONObject(response);
+            JSONObject joData=jo.getJSONObject("data");
+            String token=joData.getString("token");
+
+            Intent i=new Intent(this, AdminPanelActivity.class);
             i.putExtra("token",token);
             startActivity(i);
         }
