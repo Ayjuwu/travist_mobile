@@ -12,6 +12,7 @@ public class Keypoint {
     public int is_altered;
     public int cityId;
     private String cityName;
+    private String tags;
 
 
     public Keypoint(int id, String name, float price, String startDate, String endDate, String cover,
@@ -34,5 +35,13 @@ public class Keypoint {
 
     public void setCityName(String cityName) {
         this.cityName = cityName;
+    }
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
     }
 }

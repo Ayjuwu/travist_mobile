@@ -97,7 +97,7 @@ public class PlanifyTravelActivity extends AppCompatActivity {
                         KpListHolderPlanify.selectedKeypointsPlanify.remove(kp);
                         visitStartDates.remove(kp.id);
                         visitEndDates.remove(kp.id);
-                        requestDetails();
+                        requestKeypoints();
                         selectedKpAdapter.notifyDataSetChanged();
 
                         // Ajout dans le carrousel si pas déjà présent
@@ -137,7 +137,7 @@ public class PlanifyTravelActivity extends AppCompatActivity {
 
 
         // Appel du WebService pour récupérer les keypoints
-        requestDetails();
+        requestKeypoints();
 
 
         // Référence à l'EditText et à la TextView pour les prix
@@ -189,10 +189,10 @@ public class PlanifyTravelActivity extends AppCompatActivity {
         sliderHandler.removeCallbacks(sliderRunnable);
     }
 
-    private void requestDetails() {
+    private void requestKeypoints() {
         String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getKeypoints";
 
-        StringRequest req = new StringRequest(Request.Method.GET, url, this::processDetails, this::handleErrors) {
+        StringRequest req = new StringRequest(Request.Method.GET, url, this::processKeypoints, this::handleErrors) {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
                 return new HashMap<>();
@@ -202,7 +202,7 @@ public class PlanifyTravelActivity extends AppCompatActivity {
         rq.add(req);
     }
 
-    private void processDetails(String response) {
+    private void processKeypoints(String response) {
         try {
             JSONArray jsonArray = new JSONArray(response);
 
