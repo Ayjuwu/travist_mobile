@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#050529"
-    tools:context=".PlanifyTravelActivity">
+    tools:context=".ModifyTravelActivity">
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
@@ -62,7 +62,7 @@
                         android:textSize="16dp" />
 
                     <TextView
-                        android:id="@+id/tvIndividualPrice"
+                        android:id="@+id/tvModifyIndividualPrice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="5dp"
@@ -87,7 +87,7 @@
                         android:textSize="16dp" />
 
                     <TextView
-                        android:id="@+id/tvTotalPrice"
+                        android:id="@+id/tvModifyTotalPrice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="5dp"
@@ -116,7 +116,7 @@
 
                     <!-- EditText pour le nom du voyage -->
                     <EditText
-                        android:id="@+id/etTravelName"
+                        android:id="@+id/etModifyTravelName"
                         android:layout_width="250dp"
                         android:layout_height="wrap_content"
                         android:textColor="#fafafa"
@@ -140,7 +140,7 @@
 
                     <!-- EditText pour le nombre de voyageurs -->
                     <EditText
-                        android:id="@+id/etPeopleNumber"
+                        android:id="@+id/etModifyPeopleNumber"
                         android:layout_width="250dp"
                         android:layout_height="wrap_content"
                         android:textColor="#fafafa"
@@ -154,18 +154,18 @@
                     android:layout_width="match_parent"
                     android:layout_height="15dp" />
 
-<!--                <com.google.android.material.textfield.TextInputLayout-->
-<!--                    android:id="@+id/searchInputLayout"-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="match_parent">-->
+                <!--                <com.google.android.material.textfield.TextInputLayout-->
+                <!--                    android:id="@+id/searchInputLayout"-->
+                <!--                    android:layout_width="match_parent"-->
+                <!--                    android:layout_height="match_parent">-->
 
-<!--                    <com.google.android.material.textfield.TextInputEditText-->
-<!--                        android:layout_width="match_parent"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:background="@drawable/frame_border_container"-->
-<!--                        android:hint="Rechercher un lieu..." />-->
+                <!--                    <com.google.android.material.textfield.TextInputEditText-->
+                <!--                        android:layout_width="match_parent"-->
+                <!--                        android:layout_height="wrap_content"-->
+                <!--                        android:background="@drawable/frame_border_container"-->
+                <!--                        android:hint="Rechercher un lieu..." />-->
 
-<!--                </com.google.android.material.textfield.TextInputLayout>-->
+                <!--                </com.google.android.material.textfield.TextInputLayout>-->
 
                 <Space
                     android:layout_width="match_parent"
@@ -174,16 +174,16 @@
                 <androidx.constraintlayout.widget.ConstraintLayout
                     xmlns:android="http://schemas.android.com/apk/res/android"
                     xmlns:app="http://schemas.android.com/apk/res-auto"
-                    android:id="@+id/carouselLayout"
+                    android:id="@+id/carouselLayoutModify"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent">
 
                     <androidx.viewpager2.widget.ViewPager2
-                        android:id="@+id/viewPagerImageSlider"
+                        android:id="@+id/viewPagerModifyImageSlider"
                         android:layout_width="match_parent"
                         android:layout_height="250dp"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"/>
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"/>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
             </LinearLayout>
@@ -194,7 +194,7 @@
                 android:layout_height="wrap_content" />
 
             <Button
-                android:id="@+id/saveNewTravelBtn"
+                android:id="@+id/saveModifyTravelBtn"
                 android:layout_width="265dp"
                 android:layout_height="50dp"
                 android:layout_marginTop="30dp"

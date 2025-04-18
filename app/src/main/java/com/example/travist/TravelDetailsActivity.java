@@ -47,10 +47,9 @@ public class TravelDetailsActivity extends AppCompatActivity {
     TextView tvStartDate;
     TextView tvEndDate;
     Button deleteTravelBtn;
+    Button modifyTravelBtn;
     RecyclerView rvKpTravelDetails;
     private MapView mapView;
-
-    private TravelDatabaseHelper travelDbHelper;
     private List<Keypoint> keypointList = new ArrayList<>();
     private KeypointAdapter kpAdapter;
 
@@ -80,7 +79,9 @@ public class TravelDetailsActivity extends AppCompatActivity {
         tvStartDate = findViewById(R.id.tvStartDateTravelDetails);
         tvEndDate = findViewById(R.id.tvEndDateTravelDetails);
         rvKpTravelDetails = findViewById(R.id.rvKpTravelDetails);
-        deleteTravelBtn = findViewById(R.id.deleteTravelBtn);  // Récupération du bouton
+
+        deleteTravelBtn = findViewById(R.id.deleteTravelBtn);
+        modifyTravelBtn = findViewById(R.id.modifyTravelBtn);
 
         // Configuration du RecyclerView
         rvKpTravelDetails.setLayoutManager(new LinearLayoutManager(this));
@@ -101,10 +102,18 @@ public class TravelDetailsActivity extends AppCompatActivity {
 
         fetchKeypointsForTravel(currentTravel.id);
 
-        // Mise en place du listener pour le bouton de suppression
+        // Mise en place du listener pour les boutons
         deleteTravelBtn.setOnClickListener(view -> {
             // Appel de la méthode de suppression
             deleteTravel(currentTravel.id);
+        });
+
+        modifyTravelBtn.setOnClickListener(view -> {
+            Intent i = new Intent(this, ModifyTravelActivity.class);
+            i.putExtra("token", token);
+            i.putExtra("currentTravel", currentTravel);
+
+            startActivity(i);
         });
     }
 
@@ -191,7 +200,7 @@ public class TravelDetailsActivity extends AppCompatActivity {
                                 String cover = jo.optString("key_point_cover", "");
                                 float gpsX = (float) jo.optDouble("key_point_gps_x", 0);
                                 float gpsY = (float) jo.optDouble("key_point_gps_y", 0);
-                                boolean is_altered = jo.optBoolean("is_altered_keypoint", false);
+                                int is_altered = jo.optInt("is_altered_keypoint", 0);
                                 int cityId = jo.optInt("city_id", 0);
                                 String cityName = jo.getJSONObject("city").getString("city_name");
 

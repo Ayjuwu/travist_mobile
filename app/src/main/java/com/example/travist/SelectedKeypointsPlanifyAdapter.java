@@ -16,13 +16,13 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SelectedKeypointsAdapter extends RecyclerView.Adapter<SelectedKeypointsAdapter.ViewHolder> {
+public class SelectedKeypointsPlanifyAdapter extends RecyclerView.Adapter<SelectedKeypointsPlanifyAdapter.ViewHolder> {
 
     private OnItemRemoveListener removeListener;
     public static Map<Integer, String> visitStartDates = new HashMap<>();
     public static Map<Integer, String> visitEndDates = new HashMap<>();
 
-    public SelectedKeypointsAdapter(OnItemRemoveListener removeListener) {
+    public SelectedKeypointsPlanifyAdapter(OnItemRemoveListener removeListener) {
         this.removeListener = removeListener;
     }
 
@@ -34,13 +34,13 @@ public class SelectedKeypointsAdapter extends RecyclerView.Adapter<SelectedKeypo
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        Keypoint kp = KpListHolder.selectedKeypoints.get(position);
+        Keypoint kp = KpListHolderPlanify.selectedKeypointsPlanify.get(position);
         holder.bind(kp);
     }
 
     @Override
     public int getItemCount() {
-        return KpListHolder.selectedKeypoints.size();
+        return KpListHolderPlanify.selectedKeypointsPlanify.size();
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
@@ -65,7 +65,7 @@ public class SelectedKeypointsAdapter extends RecyclerView.Adapter<SelectedKeypo
             btnRemove.setOnClickListener(v -> {
                 int pos = getAdapterPosition();
                 if (pos != RecyclerView.NO_POSITION && removeListener != null) {
-                    removeListener.onRemove(KpListHolder.selectedKeypoints.get(pos));
+                    removeListener.onRemove(KpListHolderPlanify.selectedKeypointsPlanify.get(pos));
                 }
             });
         }
@@ -74,7 +74,7 @@ public class SelectedKeypointsAdapter extends RecyclerView.Adapter<SelectedKeypo
             int pos = getAdapterPosition();
             if (pos == RecyclerView.NO_POSITION) return;
 
-            Keypoint kp = KpListHolder.selectedKeypoints.get(pos);
+            Keypoint kp = KpListHolderPlanify.selectedKeypointsPlanify.get(pos);
             long min = parseDate(kp.startDate);
             long max = parseDate(kp.endDate);
 
@@ -137,4 +137,3 @@ public class SelectedKeypointsAdapter extends RecyclerView.Adapter<SelectedKeypo
         void onDateSelected(String date);
     }
 }
-

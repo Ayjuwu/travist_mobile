@@ -19,10 +19,10 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
-            android:name=".TravelDetailsActivity"
+            android:name=".ModifyTravelActivity"
             android:exported="false" />
         <activity
-            android:name=".TravelDetails"
+            android:name=".TravelDetailsActivity"
             android:exported="false" />
         <activity
             android:name=".KeypointDetailsActivity"
@@ -31,10 +31,7 @@
             android:name=".Profile"
             android:exported="false" />
         <activity
-            android:name=".AddTraveler"
-            android:exported="false" />
-        <activity
-            android:name=".PlanifyActivity"
+            android:name=".PlanifyTravelActivity"
             android:exported="false" />
         <activity
             android:name=".MainActivity"

@@ -54,7 +54,7 @@ public class Profile extends AppCompatActivity {
         planifyBtn = findViewById(R.id.planifyTravelBtn);
         planifyBtn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
-                Intent intent = new Intent(Profile.this, PlanifyActivity.class);
+                Intent intent = new Intent(Profile.this, PlanifyTravelActivity.class);
                 intent.putExtra("token", token);
                 startActivity(intent);
             }

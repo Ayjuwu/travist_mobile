@@ -33,8 +33,8 @@ import java.util.Map;
 public class KeypointDetailsActivity extends AppCompatActivity {
     RequestQueue rq;
     String token;
+    Travel currentTravel;
     private Button addToListBtn;
-    // Stocke le keypoint chargé depuis l'API
     private Keypoint currentKeypoint;
 
     @Override
@@ -50,8 +50,13 @@ public class KeypointDetailsActivity extends AppCompatActivity {
         });
 
         rq = Volley.newRequestQueue(this);
-        token = getIntent().getStringExtra("token");
-        int kpId = getIntent().getIntExtra("kpId", -1);
+
+        Intent i = getIntent();
+
+        token = i.getStringExtra("token");
+        int kpId = i.getIntExtra("kpId", -1);
+        String precedentActivity = i.getStringExtra("precedentActivity");
+        currentTravel = (Travel) i.getSerializableExtra("currentTravel");
 
         // Appel des détails
         requestDetails(kpId);
@@ -59,18 +64,26 @@ public class KeypointDetailsActivity extends AppCompatActivity {
         // Bouton d’ajout à la liste globale
         addToListBtn = findViewById(R.id.addToList);
         addToListBtn.setOnClickListener(view -> {
-            if (currentKeypoint != null) {
-                // Ajout du keypoint complet dans le singleton
-                KpListHolder.addKeypoint(currentKeypoint);
-                Log.d("KPLIST", "Ajouté : " + currentKeypoint.id + " -> Liste actuelle : " + KpListHolder.selectedKeypoints.toString());
-            } else {
-                Toast.makeText(KeypointDetailsActivity.this, "Le keypoint n'a pas encore été chargé", Toast.LENGTH_SHORT).show();
-            }
 
-            // Retour à l'activité Planify
-            Intent intent = new Intent(KeypointDetailsActivity.this, PlanifyActivity.class);
-            intent.putExtra("token", token);
-            startActivity(intent);
+            if (currentKeypoint != null) {
+                if (precedentActivity.equals("PlanifyTravelActivity")) {
+                    // Ajout du keypoint complet dans le singleton
+                    KpListHolderPlanify.addKeypoint(currentKeypoint);
+
+                    Intent intent = new Intent(this, PlanifyTravelActivity.class);
+                    intent.putExtra("token", token);
+                    startActivity(intent);
+                } else {
+                    // Ajout du keypoint complet dans le singleton
+                    KpListHolderModify.addKeypoint(currentKeypoint);
+
+                    KpListHolderModify.addKeypoint(currentKeypoint);
+                    setResult(RESULT_OK);
+                    finish();
+                }
+            } else {
+                Toast.makeText(this, "Le keypoint n'a pas encore été chargé", Toast.LENGTH_SHORT).show();
+            }
         });
 
     }
@@ -105,11 +118,10 @@ public class KeypointDetailsActivity extends AppCompatActivity {
             String kpStartDate = jo.getString("key_point_start_date");
             String kpEndDate = jo.getString("key_point_end_date");
             String kpCover = jo.getString("key_point_cover");
-            // Pour les autres champs, utilisation de opt* pour éviter des exceptions
-            float gpsX = (float) jo.optDouble("gpsX", 0.0);
-            float gpsY = (float) jo.optDouble("gpsY", 0.0);
-            boolean is_altered = jo.optBoolean("is_altered", false);
-            int cityId = jo.optInt("cityId", 0);
+            float gpsX = (float) jo.getDouble("key_point_gps_x");
+            float gpsY = (float) jo.getDouble("key_point_gps_y");
+            int is_altered = jo.getInt("is_altered_keypoint");
+            int cityId = jo.getInt("city_id");
 
             // Création de l'objet Keypoint et stockage en variable
             currentKeypoint = new Keypoint(kpId, kpName, kpPrice, kpStartDate, kpEndDate, kpCover,
@@ -164,7 +176,9 @@ public class KeypointDetailsActivity extends AppCompatActivity {
     public void requestCity(int kpId) {
         String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getCityByKeypoint/" + kpId;
         StringRequest req = new StringRequest(Request.Method.GET, url, this::processCity, this::handleErrors) {
-            public Map<String, String> getHeaders() { return new HashMap<>(); }
+            public Map<String, String> getHeaders() {
+                return new HashMap<>();
+            }
         };
         rq.add(req);
     }

@@ -9,13 +9,13 @@ public class Keypoint {
     public String cover;
     public float gpsX;
     public float gpsY;
-    public boolean is_altered;
+    public int is_altered;
     public int cityId;
     private String cityName;
 
 
     public Keypoint(int id, String name, float price, String startDate, String endDate, String cover,
-                    float gpsX, float gpsY, boolean is_altered, int cityId) {
+                    float gpsX, float gpsY, int is_altered, int cityId) {
         this.id = id;
         this.name = name;
         this.price = price;
