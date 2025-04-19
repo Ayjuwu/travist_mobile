@@ -23,17 +23,19 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CreateTagActivity extends AppCompatActivity {
+public class CreateCityActivity extends AppCompatActivity {
     private RequestQueue rq;
-    private EditText etTagName;
+    private EditText etCityName;
+    private EditText etCountryName;
     private Button btnNewSave;
-    private String tagName;
+    private String cityName;
+    private String cityCountryName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_create_tag);
+        setContentView(R.layout.activity_create_city);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -42,23 +44,23 @@ public class CreateTagActivity extends AppCompatActivity {
 
         rq = Volley.newRequestQueue(this);
 
-        etTagName = findViewById(R.id.etTagName);
+        etCityName = findViewById(R.id.etCityName);
+        etCountryName = findViewById(R.id.etCountryName);
 
-        btnNewSave = findViewById(R.id.addTagBtn);
+        btnNewSave = findViewById(R.id.addNewCity);
         btnNewSave.setOnClickListener(v -> addTag());
     }
 
     private void addTag() {
-        tagName = etTagName.getText().toString().trim();
-        if (!tagName.startsWith("#")) {
-            tagName = "#" + tagName;
-        }
+        cityName = etCityName.getText().toString().trim();
+        cityCountryName = etCountryName.getText().toString().trim();
 
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/createTag";
+        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/createCity";
 
         JSONObject jsonBody = new JSONObject();
         try {
-            jsonBody.put("tag_name", tagName);
+            jsonBody.put("city_name", cityName);
+            jsonBody.put("city_country", cityCountryName);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -68,7 +70,7 @@ public class CreateTagActivity extends AppCompatActivity {
                 url,
                 jsonBody,
                 response -> {
-                    Toast.makeText(this, "Tag créé avec succès !", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Ville créée avec succès !", Toast.LENGTH_SHORT).show();
                     finish();
                 },
                 error -> {

@@ -99,7 +99,7 @@
                 app:layout_constraintStart_toStartOf="parent">
 
                 <Button
-                    android:id="@+id/modifyKpBtn"
+                    android:id="@+id/modifyCityBtn"
                     android:layout_width="wrap_content"
                     android:layout_height="50dp"
                     android:backgroundTint="#323364"
@@ -117,7 +117,7 @@
                     android:layout_weight="1" />
 
                 <Button
-                    android:id="@+id/deleteKpBtn"
+                    android:id="@+id/deleteCityBtn"
                     android:layout_width="wrap_content"
                     android:layout_height="50dp"
                     android:backgroundTint="#323364"

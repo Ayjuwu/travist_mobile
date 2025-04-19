@@ -1,5 +1,6 @@
 package com.example.travist;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
@@ -27,7 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CitiesListActivity extends AppCompatActivity {
+public class CitiesListActivity extends AppCompatActivity implements CityAdapter.OnCityActionListener {
     RequestQueue rq;
     RecyclerView rvTags;
     CityAdapter cityAdapter;
@@ -51,9 +52,15 @@ public class CitiesListActivity extends AppCompatActivity {
         rvTags = findViewById(R.id.rvCities);
         rvTags.setLayoutManager(new LinearLayoutManager(this));
 
-        cityAdapter = new CityAdapter(cityList);
+        cityAdapter = new CityAdapter(cityList, this);
         rvTags.setAdapter(cityAdapter);
 
+        requestCities();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         requestCities();
     }
 
@@ -73,7 +80,7 @@ public class CitiesListActivity extends AppCompatActivity {
     private void processCities(String response) {
         try {
             JSONArray jsonArray = new JSONArray(response);
-
+            cityList.clear();
             if (jsonArray.length() != 0) {
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject city = jsonArray.getJSONObject(i);
@@ -82,8 +89,10 @@ public class CitiesListActivity extends AppCompatActivity {
                     String cityName = city.getString("city_name");
                     String cityCountry = city.getString("city_country");
 
-                    City c = new City(cityId, cityName, cityCountry);
-                    cityList.add(c);
+                    if (cityId != 0) {
+                        City c = new City(cityId, cityName, cityCountry);
+                        cityList.add(c);
+                    }
                 }
 
                 cityAdapter.notifyDataSetChanged();
@@ -93,12 +102,35 @@ public class CitiesListActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onModify(City city) {
+        Intent intent = new Intent(this, ModifyCityActivity.class);
+        intent.putExtra("cityId", city.id);
+        intent.putExtra("cityName", city.name);
+        intent.putExtra("cityCountryName", city.countryName);
+        startActivity(intent);
+    }
+
+    @Override
+    public void onDelete(City city) {
+        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/deleteCity/" + city.id;
+        StringRequest req = new StringRequest(Request.Method.DELETE, url,
+                response -> {
+                    cityList.remove(city);
+                    cityAdapter.notifyDataSetChanged();
+                    Toast.makeText(this, "Ville supprimée", Toast.LENGTH_SHORT).show();
+                },
+                error -> Toast.makeText(this, "Erreur suppression", Toast.LENGTH_SHORT).show()
+        );
+        rq.add(req);
+    }
+
     private void handleErrors(Throwable t) {
         handleError("SERVERSIDE BUG", "Erreur du côté serveur");
     }
 
     private void handleError(String logMessage, String toastMessage) {
-        Log.e("KeypointsListActivity", logMessage);
+        Log.e("CitiesListActivity", logMessage);
         Toast.makeText(this, toastMessage, Toast.LENGTH_LONG).show();
     }
 }

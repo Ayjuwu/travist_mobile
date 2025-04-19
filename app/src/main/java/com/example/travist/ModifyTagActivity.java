@@ -105,7 +105,6 @@ public class ModifyTagActivity extends AppCompatActivity {
             }
         };
 
-        // N’oublie pas d’avoir initialisé rq = Volley.newRequestQueue(this);
         rq.add(req);
     }
 }

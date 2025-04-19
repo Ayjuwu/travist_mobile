@@ -2,7 +2,6 @@ package com.example.travist;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -110,14 +109,5 @@ public class TagsListActivity extends AppCompatActivity implements TagAdapter.On
                 error -> Toast.makeText(this, "Erreur suppression", Toast.LENGTH_SHORT).show()
         );
         rq.add(req);
-    }
-
-    private void handleErrors(Throwable t) {
-        handleError("SERVERSIDE BUG", "Erreur du côté serveur");
-    }
-
-    private void handleError(String logMessage, String toastMessage) {
-        Log.e("KeypointsListActivity", logMessage);
-        Toast.makeText(this, toastMessage, Toast.LENGTH_LONG).show();
     }
 }

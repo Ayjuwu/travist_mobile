@@ -19,6 +19,12 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
+            android:name=".CreateCityActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ModifyCityActivity"
+            android:exported="false" />
+        <activity
             android:name=".CreateTagActivity"
             android:exported="false" />
         <activity

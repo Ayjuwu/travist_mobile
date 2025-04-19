@@ -75,7 +75,7 @@ public class AdminPanelActivity extends AppCompatActivity {
 
         addNewCityBtn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
-                Intent intent = new Intent(AdminPanelActivity.this, PlanifyTravelActivity.class);
+                Intent intent = new Intent(AdminPanelActivity.this, CreateCityActivity.class);
                 startActivity(intent);
             }
         });

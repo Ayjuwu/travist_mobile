@@ -3,6 +3,7 @@ package com.example.travist;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
@@ -11,10 +12,17 @@ import java.util.List;
 
 public class CityAdapter extends RecyclerView.Adapter<CityAdapter.ViewHolder> {
 
-    private List<City> cities;
+    public interface OnCityActionListener {
+        void onModify(City city);
+        void onDelete(City city);
+    }
 
-    public CityAdapter(List<City> cities) {
+    private List<City> cities;
+    private CityAdapter.OnCityActionListener listener;
+
+    public CityAdapter(List<City> cities, OnCityActionListener listener) {
         this.cities = cities;
+        this.listener = listener;
     }
 
     @Override
@@ -26,7 +34,11 @@ public class CityAdapter extends RecyclerView.Adapter<CityAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         City city = cities.get(position);
-        holder.bind(city);
+        holder.tvCityId.setText(String.valueOf(city.id));
+        holder.tvCityName.setText(city.name);
+        holder.tvCityCountryName.setText(city.countryName);
+        holder.btnModify.setOnClickListener(v -> listener.onModify(city));
+        holder.btnDelete.setOnClickListener(v -> listener.onDelete(city));
     }
 
     @Override
@@ -38,18 +50,15 @@ public class CityAdapter extends RecyclerView.Adapter<CityAdapter.ViewHolder> {
         TextView tvCityId;
         TextView tvCityName;
         TextView tvCityCountryName;
+        Button btnModify, btnDelete;
 
         public ViewHolder(View itemView) {
             super(itemView);
             tvCityId = itemView.findViewById(R.id.tvCityId);
             tvCityName = itemView.findViewById(R.id.tvCityName);
             tvCityCountryName = itemView.findViewById(R.id.tvCityCountry);
-        }
-
-        public void bind(City city) {
-            tvCityId.setText(String.valueOf(city.id));
-            tvCityName.setText(city.name);
-            tvCityCountryName.setText(city.countryName);
+            btnModify = itemView.findViewById(R.id.modifyCityBtn);
+            btnDelete = itemView.findViewById(R.id.deleteCityBtn);
         }
     }
 }

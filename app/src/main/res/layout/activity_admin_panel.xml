@@ -137,7 +137,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="15dp"
                 android:backgroundTint="#323364"
-                android:text="Voir la liste des lieux"
+                android:text="Créer une nouvelle ville"
                 android:textColor="#dddefa"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.497"

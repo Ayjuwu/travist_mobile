@@ -1,5 +1,6 @@
 package com.example.travist;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -23,42 +24,64 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CreateTagActivity extends AppCompatActivity {
+public class ModifyCityActivity extends AppCompatActivity {
+
     private RequestQueue rq;
-    private EditText etTagName;
-    private Button btnNewSave;
-    private String tagName;
+    private EditText etCityName;
+    private EditText etCityCountryName;
+    String cityName;
+    String cityCountryName;
+    private Button btnSave;
+    private int cityId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_create_tag);
+        setContentView(R.layout.activity_modify_city);
+
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             return insets;
         });
 
+
         rq = Volley.newRequestQueue(this);
 
-        etTagName = findViewById(R.id.etTagName);
 
-        btnNewSave = findViewById(R.id.addTagBtn);
-        btnNewSave.setOnClickListener(v -> addTag());
-    }
-
-    private void addTag() {
-        tagName = etTagName.getText().toString().trim();
-        if (!tagName.startsWith("#")) {
-            tagName = "#" + tagName;
+        Intent i = getIntent();
+        cityId   = i.getIntExtra("cityId", -1);
+        String cityName = i.getStringExtra("cityName");
+        String cityCountryName = i.getStringExtra("cityCountryName");
+        if (cityId == -1) {
+            Toast.makeText(this, "ID de ville invalide", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
         }
 
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/createTag";
+        etCityName = findViewById(R.id.etCityName);
+        etCityCountryName = findViewById(R.id.etCountryName);
+        btnSave = findViewById(R.id.saveModifiedCity);
+
+
+        etCityName.setText(cityName);
+        etCityCountryName.setText(cityCountryName);
+
+        btnSave.setOnClickListener(v -> modifyCity());
+    }
+
+    private void modifyCity() {
+        cityName = etCityName.getText().toString().trim();
+        cityCountryName = etCityCountryName.getText().toString().trim();
+
+        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/updateCity/" + cityId;
 
         JSONObject jsonBody = new JSONObject();
         try {
-            jsonBody.put("tag_name", tagName);
+            jsonBody.put("city_name", cityName);
+            jsonBody.put("city_country", cityCountryName);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -68,13 +91,13 @@ public class CreateTagActivity extends AppCompatActivity {
                 url,
                 jsonBody,
                 response -> {
-                    Toast.makeText(this, "Tag créé avec succès !", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Ville modifiée avec succès !", Toast.LENGTH_SHORT).show();
                     finish();
                 },
                 error -> {
                     error.printStackTrace();
                     Toast.makeText(this,
-                            "Erreur de création : " + error.getMessage(),
+                            "Erreur de modification : " + error.getMessage(),
                             Toast.LENGTH_LONG
                     ).show();
                 }
