@@ -6,6 +6,7 @@ import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
@@ -15,11 +16,17 @@ import com.makeramen.roundedimageview.RoundedImageView;
 import java.util.List;
 
 public class KeypointAllAdapter extends RecyclerView.Adapter<KeypointAllAdapter.ViewHolder> {
+    public interface OnKpActionListener {
+        void onModify(Keypoint kp);
+        void onDelete(Keypoint kp);
+    }
 
     private List<Keypoint> keypoints;
+    private KeypointAllAdapter.OnKpActionListener listener;
 
-    public KeypointAllAdapter(List<Keypoint> keypoints) {
+    public KeypointAllAdapter(List<Keypoint> keypoints, KeypointAllAdapter.OnKpActionListener listener) {
         this.keypoints = keypoints;
+        this.listener = listener;
     }
 
     @Override
@@ -32,6 +39,8 @@ public class KeypointAllAdapter extends RecyclerView.Adapter<KeypointAllAdapter.
     public void onBindViewHolder(ViewHolder holder, int position) {
         Keypoint kp = keypoints.get(position);
         holder.bind(kp);
+        holder.btnModify.setOnClickListener(v -> listener.onModify(kp));
+        holder.btnDelete.setOnClickListener(v -> listener.onDelete(kp));
     }
 
     @Override
@@ -50,6 +59,7 @@ public class KeypointAllAdapter extends RecyclerView.Adapter<KeypointAllAdapter.
         TextView tvKpY;
         RoundedImageView ivKpCover;
         TextView tvKpTags;
+        Button btnModify, btnDelete;
 
         public ViewHolder(View itemView) {
             super(itemView);
@@ -63,6 +73,9 @@ public class KeypointAllAdapter extends RecyclerView.Adapter<KeypointAllAdapter.
             tvKpY = itemView.findViewById(R.id.tvKpY);
             ivKpCover = itemView.findViewById(R.id.ivKpCover);
             tvKpTags = itemView.findViewById(R.id.tvKpTags);
+
+            btnModify = itemView.findViewById(R.id.modifyKpBtn);
+            btnDelete = itemView.findViewById(R.id.deleteKpBtn);
         }
 
         public void bind(Keypoint kp) {

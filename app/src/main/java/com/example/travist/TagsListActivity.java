@@ -78,10 +78,13 @@ public class TagsListActivity extends AppCompatActivity implements TagAdapter.On
             tagList.clear();
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.getJSONObject(i);
-                tagList.add(new Tag(
-                        o.getInt("id"),
-                        o.getString("tag_name")
-                ));
+
+                if (o.getInt("id") != 0) {
+                    tagList.add(new Tag(
+                            o.getInt("id"),
+                            o.getString("tag_name")
+                    ));
+                }
             }
             tagAdapter.notifyDataSetChanged();
         } catch (JSONException e) {

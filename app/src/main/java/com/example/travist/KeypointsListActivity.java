@@ -1,9 +1,9 @@
 package com.example.travist;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
-
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -11,17 +11,13 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,15 +25,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class KeypointsListActivity extends AppCompatActivity {
-    RequestQueue rq;
-    RecyclerView rvKeypoints;
-    KeypointAllAdapter kpAdapter;
-    List<Keypoint> kpList;
+public class KeypointsListActivity extends AppCompatActivity implements KeypointAllAdapter.OnKpActionListener {
+    private RecyclerView rvKeypoints;
+    private KeypointAllAdapter kpAdapter;
+    private List<Keypoint> kpList = new ArrayList<>();
     private Map<Integer, Keypoint> pendingKeypoints = new HashMap<>();
-    private Set<Integer> cityLoadedIds = new HashSet<>();
-    private Set<Integer> tagsLoadedIds = new HashSet<>();
+    private Set<Integer> tagsLoaded = new HashSet<>();
 
+    private Map<Integer, String> cityMap = new HashMap<>();
+    private Map<Integer, String> tagMap = new HashMap<>();
+    private String defaultCityName = "Non-définie";
+    private String defaultTagName = "#NaN";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,137 +43,191 @@ public class KeypointsListActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_keypoints_list);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             return insets;
         });
 
-        rq = Volley.newRequestQueue(this);
-
-        kpList = new ArrayList<>();
-
         rvKeypoints = findViewById(R.id.rvKeypoints);
         rvKeypoints.setLayoutManager(new LinearLayoutManager(this));
-
-        kpAdapter = new KeypointAllAdapter(kpList);
+        kpAdapter = new KeypointAllAdapter(kpList, this);
         rvKeypoints.setAdapter(kpAdapter);
 
+        // charger d'abord les référentiels, puis les keypoints
+        requestAllCities(() -> requestAllTags(this::requestKeypoints));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        pendingKeypoints.clear();
+        tagsLoaded.clear();
+        kpList.clear();
+        kpAdapter.notifyDataSetChanged();
         requestKeypoints();
     }
 
     private void requestKeypoints() {
+        pendingKeypoints.clear();
+        tagsLoaded.clear();
+        kpList.clear();
+        kpAdapter.notifyDataSetChanged();
+
         String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getKeypoints";
-
-        StringRequest req = new StringRequest(Request.Method.GET, url, this::processKeypoints, this::handleErrors) {
-            @Override
-            public Map<String, String> getHeaders() throws AuthFailureError {
-                return new HashMap<>();
-            }
-        };
-
-        rq.add(req);
+        Volley.newRequestQueue(this).add(
+                new StringRequest(Request.Method.GET, url,
+                        this::processKeypoints,
+                        err -> handleError("Keypoints load error", "Erreur réseau")){
+                    @Override public Map<String,String> getHeaders() throws AuthFailureError { return new HashMap<>(); }
+                }
+        );
     }
 
     private void processKeypoints(String response) {
         try {
-            JSONArray jsonArray = new JSONArray(response);
+            JSONArray arr = new JSONArray(response);
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject kpJson = arr.getJSONObject(i);
+                int id = kpJson.getInt("id");
+                Keypoint kp = new Keypoint(
+                        id,
+                        kpJson.getString("key_point_name"),
+                        (float) kpJson.getDouble("key_point_price"),
+                        kpJson.getString("key_point_start_date"),
+                        kpJson.getString("key_point_end_date"),
+                        kpJson.getString("key_point_cover"),
+                        (float) kpJson.getDouble("key_point_gps_x"),
+                        (float) kpJson.getDouble("key_point_gps_y"),
+                        kpJson.getInt("is_altered_keypoint"),
+                        kpJson.getInt("city_id")
+                );
 
-            if (jsonArray.length() != 0) {
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    JSONObject kp = jsonArray.getJSONObject(i);
+                // fallback city
+                kp.setCityName(cityMap.getOrDefault(kp.cityId, defaultCityName));
+                pendingKeypoints.put(id, kp);
+                tagsLoaded.remove(id);
 
-                    int kpId = kp.getInt("id");
-                    String kpName = kp.getString("key_point_name");
-                    float kpPrice = (float) kp.getDouble("key_point_price");
-                    String kpStartDate = kp.getString("key_point_start_date");
-                    String kpEndDate = kp.getString("key_point_end_date");
-                    String kpCover = kp.getString("key_point_cover");
-                    float kpX = (float) kp.getDouble("key_point_gps_x");
-                    float kpY = (float) kp.getDouble("key_point_gps_y");
-                    int is_altered_keypoint = kp.getInt("is_altered_keypoint");
-                    int cityId = kp.getInt("city_id");
-
-                    Keypoint keypoint = new Keypoint(kpId, kpName, kpPrice, kpStartDate, kpEndDate, kpCover,
-                            kpX, kpY, is_altered_keypoint, cityId);
-
-                    pendingKeypoints.put(kpId, keypoint);
-                    requestCity(kpId);
-                    requestTags(kpId);;
-                }
-
-                kpAdapter.notifyDataSetChanged();
+                requestTags(id);
             }
-        } catch (JSONException x) {
-            handleError("JSON PARSE ERROR: " + response, "Erreur de traitement des données JSON");
+        } catch (JSONException e) {
+            handleError("JSON error", "Erreur parsing JSON");
         }
     }
 
-    public void requestCity(int kpId) {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getCityByKeypoint/" + kpId;
-        StringRequest req = new StringRequest(Request.Method.GET, url, response -> {
-            try {
-                JSONObject jo = new JSONObject(response);
-                String cityName = jo.getString("city_name");
-
-                Keypoint kp = pendingKeypoints.get(kpId);
-                if (kp != null) {
-                    kp.setCityName(cityName);
-                    cityLoadedIds.add(kpId);
-                    tryAddKeypoint(kpId);
+    private void requestAllCities(Runnable next) {
+        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getCities";
+        Volley.newRequestQueue(this).add(
+                new StringRequest(Request.Method.GET, url,
+                        resp -> {
+                            try {
+                                JSONArray arr = new JSONArray(resp);
+                                for (int i = 0; i < arr.length(); i++) {
+                                    JSONObject o = arr.getJSONObject(i);
+                                    int id = o.getInt("id");
+                                    String name = o.getString("city_name");
+                                    cityMap.put(id, name);
+                                }
+                                defaultCityName = cityMap.getOrDefault(0, defaultCityName);
+                                next.run();
+                            } catch (JSONException e) {
+                                next.run();
+                            }
+                        },
+                        err -> next.run()
+                ){
+                    @Override public Map<String, String> getHeaders() throws AuthFailureError { return new HashMap<>(); }
                 }
-            } catch (JSONException e) {
-                handleError("City JSON error: " + response, "Erreur JSON (ville)");
-            }
-        }, this::handleErrors);
-
-        rq.add(req);
+        );
     }
 
-    public void requestTags(int kpId) {
+    private void requestAllTags(Runnable next) {
+        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTags";
+        Volley.newRequestQueue(this).add(
+                new StringRequest(Request.Method.GET, url,
+                        resp -> {
+                            try {
+                                JSONArray arr = new JSONArray(resp);
+                                for (int i = 0; i < arr.length(); i++) {
+                                    JSONObject o = arr.getJSONObject(i);
+                                    int id = o.getInt("id");
+                                    String name = o.getString("tag_name");
+                                    tagMap.put(id, name);
+                                }
+                                defaultTagName = tagMap.getOrDefault(0, defaultTagName);
+                                next.run();
+                            } catch (JSONException e) {
+                                next.run();
+                            }
+                        },
+                        err -> next.run()
+                ){
+                    @Override public Map<String, String> getHeaders() throws AuthFailureError { return new HashMap<>(); }
+                }
+        );
+    }
+
+    private void requestTags(int kpId) {
         String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTagsByKeypoint/" + kpId;
-        StringRequest req = new StringRequest(Request.Method.GET, url, response -> {
-            try {
-                JSONArray jsonArray = new JSONArray(response);
-                StringBuilder tags = new StringBuilder();
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    JSONObject tagObj = jsonArray.getJSONObject(i);
-                    if (i != 0) tags.append(" ");
-                    tags.append(tagObj.getString("tag_name"));
+        Volley.newRequestQueue(this).add(
+                new StringRequest(Request.Method.GET, url,
+                        response -> {
+                            Keypoint kp = pendingKeypoints.get(kpId);
+                            String tags;
+                            try {
+                                JSONArray arr = new JSONArray(response);
+                                if (arr.length() == 0) {
+                                    tags = defaultTagName;
+                                } else {
+                                    StringBuilder sb = new StringBuilder();
+                                    for (int j = 0; j < arr.length(); j++) {
+                                        if (j > 0) sb.append(" ");
+                                        sb.append(arr.getJSONObject(j).getString("tag_name"));
+                                    }
+                                    tags = sb.toString();
+                                }
+                                if (kp != null) {
+                                    kp.setTags(tags);
+                                    // on peut ajouter
+                                    kpList.add(kp);
+                                    kpAdapter.notifyItemInserted(kpList.size() - 1);
+                                    pendingKeypoints.remove(kpId);
+                                }
+                            } catch (JSONException e) {
+                                // faute pivot tags
+                            }
+                        },
+                        err -> handleError("Tags load error", "Erreur réseau")){
+                    @Override public Map<String,String> getHeaders() throws AuthFailureError { return new HashMap<>(); }
                 }
+        );
+    }
 
-                Keypoint kp = pendingKeypoints.get(kpId);
-                if (kp != null) {
-                    kp.setTags(tags.toString());
-                    tagsLoadedIds.add(kpId);
-                    tryAddKeypoint(kpId);
+    @Override
+    public void onModify(Keypoint kp) {
+        Intent i = new Intent(this, ModifyKeypointActivity.class);
+        i.putExtra("kpId", kp.id);
+        startActivity(i);
+    }
+
+    @Override
+    public void onDelete(Keypoint kp) {
+        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/deleteKeypoint/" + kp.id;
+        Volley.newRequestQueue(this).add(
+                new StringRequest(Request.Method.DELETE, url,
+                        resp -> {
+                            kpList.remove(kp);
+                            kpAdapter.notifyDataSetChanged();
+                            Toast.makeText(this, "Lieu supprimé", Toast.LENGTH_SHORT).show();
+                        },
+                        err -> handleError("Delete error", "Erreur suppression")){
+                    @Override public Map<String,String> getHeaders() throws AuthFailureError { return new HashMap<>(); }
                 }
-            } catch (JSONException e) {
-                handleError("Tags JSON error: " + response, "Erreur JSON (tags)");
-            }
-        }, this::handleErrors);
-
-        rq.add(req);
+        );
     }
 
-    private void tryAddKeypoint(int kpId) {
-        if (cityLoadedIds.contains(kpId) && tagsLoadedIds.contains(kpId)) {
-            Keypoint kp = pendingKeypoints.remove(kpId);
-            if (kp != null) {
-                kpList.add(kp);
-                kpAdapter.notifyItemInserted(kpList.size() - 1);
-            }
-
-            cityLoadedIds.remove(kpId);
-            tagsLoadedIds.remove(kpId);
-        }
-    }
-
-    private void handleErrors(Throwable t) {
-        handleError("SERVERSIDE BUG", "Erreur du côté serveur");
-    }
-
-    private void handleError(String logMessage, String toastMessage) {
-        Log.e("KeypointsListActivity", logMessage);
-        Toast.makeText(this, toastMessage, Toast.LENGTH_LONG).show();
+    private void handleError(String log, String toast) {
+        Log.e("KeypointsList", log);
+        Toast.makeText(this, toast, Toast.LENGTH_LONG).show();
     }
 }
