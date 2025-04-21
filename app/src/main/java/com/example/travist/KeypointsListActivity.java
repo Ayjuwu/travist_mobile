@@ -57,17 +57,6 @@ public class KeypointsListActivity extends AppCompatActivity implements Keypoint
         requestAllCities(() -> requestAllTags(this::requestKeypoints));
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        pendingKeypoints.clear();
-        tagsLoaded.clear();
-        kpList.clear();
-        kpAdapter.notifyDataSetChanged();
-        requestKeypoints();
-    }
-
     private void requestKeypoints() {
         pendingKeypoints.clear();
         tagsLoaded.clear();
