@@ -54,7 +54,8 @@ public class CreateTagActivity extends AppCompatActivity {
             tagName = "#" + tagName;
         }
 
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/createTag";
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/createTag";
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/createTag";
 
         JSONObject jsonBody = new JSONObject();
         try {

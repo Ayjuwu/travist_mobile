@@ -153,7 +153,8 @@ public class ModifyKeypointActivity extends AppCompatActivity {
     }
 
     private void loadTags() {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTags";
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getTags";
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTags";
         StringRequest req = new StringRequest(Request.Method.GET, url,
                 response -> {
                     try {
@@ -219,7 +220,8 @@ public class ModifyKeypointActivity extends AppCompatActivity {
     }
 
     private void loadKeypoint() {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getKeypointById/" + kpId;
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getKeypointById/" + kpId;
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getKeypointById/" + kpId;
         StringRequest req = new StringRequest(Request.Method.GET, url,
                 response -> {
                     try {
@@ -260,7 +262,8 @@ public class ModifyKeypointActivity extends AppCompatActivity {
             ivCover.setVisibility(View.VISIBLE);
             base64Cover = b64;
         }
-        String tagUrl = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTagsByKeypoint/" + kpId;
+        // String tagUrl = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getTagsByKeypoint/" + kpId;
+        String tagUrl = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTagsByKeypoint/" + kpId;
         StringRequest tagReq = new StringRequest(Request.Method.GET, tagUrl,
                 response -> {
                     try {
@@ -332,7 +335,8 @@ public class ModifyKeypointActivity extends AppCompatActivity {
             body.put("tags", tagArr);
         } catch(JSONException ex){ ex.printStackTrace(); }
 
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/updateKeypoint/" + kpId;
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/updateKeypoint/" + kpId;
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/updateKeypoint/" + kpId;
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.POST, url, body,
                 response -> {
                     Toast.makeText(this,"Lieu mis à jour",Toast.LENGTH_SHORT).show();

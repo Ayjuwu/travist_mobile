@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         // String url="http://192.168.0.110/~mathys.raspolini/travist/public/api/login";
-        String url="http://10.0.2.2/www/PPE_Travist/travist/public/api/login";
+        String url="http://10.0.2.2/~mathys.raspolini/travist/public/api/login";
 
         if (mail.equals("admin@gmail.com")) {
             StringRequest req = new StringRequest(Request.Method.POST,url,this::processLoginRequestAdmin,this::handleErrors){

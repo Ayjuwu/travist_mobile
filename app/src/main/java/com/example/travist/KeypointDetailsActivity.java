@@ -90,7 +90,8 @@ public class KeypointDetailsActivity extends AppCompatActivity {
 
     public void requestDetails(int kpId) {
         if (kpId != -1) {
-            String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getKeypointById/" + kpId;
+            // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getKeypointById/" + kpId;
+            String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getKeypointById/" + kpId;
 
             StringRequest req = new StringRequest(Request.Method.GET, url, this::processDetails, this::handleErrors) {
                 public Map<String, String> getHeaders() throws AuthFailureError {
@@ -146,7 +147,8 @@ public class KeypointDetailsActivity extends AppCompatActivity {
     }
 
     public void requestTags(int kpId) {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTagsByKeypoint/" + kpId;
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getTagsByKeypoint/" + kpId;
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTagsByKeypoint/" + kpId;
         StringRequest req = new StringRequest(Request.Method.GET, url, this::processTags, this::handleErrors) {
             public Map<String, String> getHeaders() { return new HashMap<>(); }
         };
@@ -174,7 +176,8 @@ public class KeypointDetailsActivity extends AppCompatActivity {
     }
 
     public void requestCity(int kpId) {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getCityByKeypoint/" + kpId;
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getCityByKeypoint/" + kpId;
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getCityByKeypoint/" + kpId;
         StringRequest req = new StringRequest(Request.Method.GET, url, this::processCity, this::handleErrors) {
             public Map<String, String> getHeaders() {
                 return new HashMap<>();

@@ -8,6 +8,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -18,8 +19,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
@@ -40,18 +39,14 @@ import java.util.Map;
 public class TravelDetailsActivity extends AppCompatActivity {
     String token;
     RequestQueue rq;
-    TextView tvTravelName;
-    TextView tvNbPeople;
-    TextView tvIndividualPrice;
-    TextView tvTotalPrice;
-    TextView tvStartDate;
-    TextView tvEndDate;
-    Button deleteTravelBtn;
-    Button modifyTravelBtn;
+    TextView tvTravelName, tvNbPeople, tvIndividualPrice, tvTotalPrice, tvStartDate, tvEndDate;
+    Button deleteTravelBtn, modifyTravelBtn;
     RecyclerView rvKpTravelDetails;
     private MapView mapView;
-    private List<Keypoint> keypointList = new ArrayList<>();
     private KeypointAdapter kpAdapter;
+    private Travel currentTravel;
+
+    private static final int REPLACE_KEYPOINT_REQUEST = 101;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,8 +61,6 @@ public class TravelDetailsActivity extends AppCompatActivity {
         });
 
         rq = Volley.newRequestQueue(this);
-
-        // Initialisation osmdroid
         Configuration.getInstance().setUserAgentValue(getPackageName());
         mapView = findViewById(R.id.mapView);
         mapView.setMultiTouchControls(true);
@@ -83,16 +76,10 @@ public class TravelDetailsActivity extends AppCompatActivity {
         deleteTravelBtn = findViewById(R.id.deleteTravelBtn);
         modifyTravelBtn = findViewById(R.id.modifyTravelBtn);
 
-        // Configuration du RecyclerView
-        rvKpTravelDetails.setLayoutManager(new LinearLayoutManager(this));
-        kpAdapter = new KeypointAdapter(keypointList);
-        rvKpTravelDetails.setAdapter(kpAdapter);
-
         Intent intent = getIntent();
         token = intent.getStringExtra("token");
-        Travel currentTravel = (Travel) intent.getSerializableExtra("currentTravel");
+        currentTravel = (Travel) intent.getSerializableExtra("currentTravel");
 
-        // Affichage des détails du voyage
         tvTravelName.setText(currentTravel.name);
         tvNbPeople.setText(String.valueOf(currentTravel.peopleNumber));
         tvIndividualPrice.setText(currentTravel.individualPrice + "€");
@@ -100,26 +87,47 @@ public class TravelDetailsActivity extends AppCompatActivity {
         tvStartDate.setText(currentTravel.startDate);
         tvEndDate.setText(currentTravel.endDate);
 
+        rvKpTravelDetails.setLayoutManager(new LinearLayoutManager(this));
+        kpAdapter = new KeypointAdapter(this, KeypointManager.getCurrentKeypoints(), currentTravel.id);
+        rvKpTravelDetails.setAdapter(kpAdapter);
+
         fetchKeypointsForTravel(currentTravel.id);
 
-        // Mise en place du listener pour les boutons
-        deleteTravelBtn.setOnClickListener(view -> {
-            // Appel de la méthode de suppression
-            deleteTravel(currentTravel.id);
-        });
+        deleteTravelBtn.setOnClickListener(view -> deleteTravel(currentTravel.id));
 
         modifyTravelBtn.setOnClickListener(view -> {
             Intent i = new Intent(this, ModifyTravelActivity.class);
             i.putExtra("token", token);
             i.putExtra("currentTravel", currentTravel);
-
             startActivity(i);
         });
     }
+    @Override
+    public void onResume() {
+        super.onResume();
+        fetchKeypointsForTravel(currentTravel.id);
+        mapView.onResume();
+    }
 
-    // Méthode pour déclencher la suppression du voyage
+    @Override
+    public void onPause() {
+        super.onPause();
+        mapView.onPause();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == REPLACE_KEYPOINT_REQUEST && resultCode == RESULT_OK) {
+            // Mise à jour visuelle après remplacement
+            fetchKeypointsForTravel(currentTravel.id);
+        }
+    }
+
     public void deleteTravel(int travelId) {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/deleteTravel/" + travelId;
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/deleteTravel/" + travelId;
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/deleteTravel/" + travelId;
 
         StringRequest req = new StringRequest(Request.Method.DELETE, url,
                 this::processCurrentTravelDeletion,
@@ -140,115 +148,140 @@ public class TravelDetailsActivity extends AppCompatActivity {
     public void processCurrentTravelDeletion(String response) {
         try {
             JSONObject json = new JSONObject(response);
-            boolean success = json.getBoolean("success");
-
-            if (success) {
+            if (json.getBoolean("success")) {
                 Toast.makeText(this, "Voyage supprimé avec succès", Toast.LENGTH_SHORT).show();
-
-                // Retour au profil ou autre action
                 Intent intent = new Intent(this, Profile.class);
                 intent.putExtra("token", token);
                 startActivity(intent);
-                finish(); // pour que cette activité ne reste pas dans la pile
+                finish();
             } else {
                 Toast.makeText(this, "Erreur lors de la suppression", Toast.LENGTH_SHORT).show();
             }
-
         } catch (JSONException e) {
             Toast.makeText(this, "Erreur de réponse", Toast.LENGTH_SHORT).show();
-            Log.e("DELETE_TRAVEL", "Réponse mal formée : " + response, e);
         }
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        mapView.onResume();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        mapView.onPause();
-    }
-
     private void fetchKeypointsForTravel(int travelId) {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getKeypointsByTravel/" + travelId;
-        RequestQueue queue = Volley.newRequestQueue(this);
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getKeypointsByTravel/" + travelId;
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getKeypointsByTravel/" + travelId;
 
         StringRequest request = new StringRequest(Request.Method.GET, url,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        // Ajout des marqueurs et du tracé
-                        List<GeoPoint> geoPoints = new ArrayList<>();
+                response -> {
+                    List<GeoPoint> geoPoints = new ArrayList<>();
+                    mapView.getOverlays().clear();
+                    KeypointManager.clearKeypoints();
 
-                        try {
-                            // Nettoyage carte
-                            mapView.getOverlays().clear();
+                    try {
+                        JSONArray jsonArray = new JSONArray(response);
+                        for (int i = 0; i < jsonArray.length(); i++) {
+                            JSONObject jo = jsonArray.getJSONObject(i);
+                            int id = jo.getInt("id");
+                            String name = jo.getString("key_point_name");
+                            float price = (float) jo.getDouble("key_point_price");
+                            String startDate = jo.getJSONObject("pivot").getString("start_date");
+                            String endDate = jo.getJSONObject("pivot").getString("end_date");
+                            String cover = jo.optString("key_point_cover", "");
+                            float gpsX = (float) jo.optDouble("key_point_gps_x", 0);
+                            float gpsY = (float) jo.optDouble("key_point_gps_y", 0);
+                            int is_altered = jo.optInt("is_altered_keypoint", 0);
+                            int cityId = jo.optInt("city_id", 0);
+                            String cityName = jo.getJSONObject("city").getString("city_name");
 
-                            JSONArray jsonArray = new JSONArray(response);
-                            keypointList.clear();
-                            for (int i = 0; i < jsonArray.length(); i++) {
-                                JSONObject jo = jsonArray.getJSONObject(i);
-                                int id = jo.getInt("id");
-                                String name = jo.getString("key_point_name");
-                                float price = (float) jo.getDouble("key_point_price");
+                            Keypoint kp = new Keypoint(id, name, price, startDate, endDate, cover, gpsX, gpsY, is_altered, cityId);
+                            kp.setCityName(cityName);
+                            KeypointManager.addKeypoint(kp);
 
-                                String startDate = jo.getJSONObject("pivot").getString("start_date");
-                                String endDate = jo.getJSONObject("pivot").getString("end_date");
-                                String cover = jo.optString("key_point_cover", "");
-                                float gpsX = (float) jo.optDouble("key_point_gps_x", 0);
-                                float gpsY = (float) jo.optDouble("key_point_gps_y", 0);
-                                int is_altered = jo.optInt("is_altered_keypoint", 0);
-                                int cityId = jo.optInt("city_id", 0);
-                                String cityName = jo.getJSONObject("city").getString("city_name");
+                            GeoPoint point = new GeoPoint(kp.gpsX, kp.gpsY);
+                            geoPoints.add(point);
 
-                                Keypoint kp = new Keypoint(id, name, price, startDate, endDate, cover, gpsX, gpsY, is_altered, cityId);
-                                kp.setCityName(cityName);
-                                keypointList.add(kp);
-
-                                GeoPoint point = new GeoPoint(kp.gpsX, kp.gpsY);
-                                geoPoints.add(point);
-
-                                Marker marker = new Marker(mapView);
-                                marker.setPosition(point);
-                                marker.setTitle(kp.name);
-                                marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-                                mapView.getOverlays().add(marker);
-
-                                // Tracer le trajet
-                                Polyline polyline = new Polyline();
-                                polyline.setPoints(geoPoints);
-                                mapView.getOverlays().add(polyline);
-
-                                // Centrer la carte sur le premier point
-                                if (!geoPoints.isEmpty()) {
-                                    mapView.getController().setZoom(12.0);
-                                    mapView.getController().setCenter(geoPoints.get(0));
-                                }
-
-                                // Mise à jour de la vue
-                                mapView.invalidate();
-                            }
-                            kpAdapter.notifyDataSetChanged();
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                            Toast.makeText(TravelDetailsActivity.this, "Erreur lors de la récupération des keypoints.", Toast.LENGTH_SHORT).show();
+                            Marker marker = new Marker(mapView);
+                            marker.setPosition(point);
+                            marker.setTitle(kp.name);
+                            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                            mapView.getOverlays().add(marker);
                         }
+
+                        Polyline polyline = new Polyline();
+                        polyline.setPoints(geoPoints);
+                        mapView.getOverlays().add(polyline);
+
+                        if (!geoPoints.isEmpty()) {
+                            mapView.getController().setZoom(12.0);
+                            mapView.getController().setCenter(geoPoints.get(0));
+                        }
+
+                        mapView.invalidate();
+                        kpAdapter.notifyDataSetChanged();
+
+                    } catch (JSONException e) {
+                        Toast.makeText(this, "Erreur JSON", Toast.LENGTH_SHORT).show();
+                        e.printStackTrace();
                     }
-                }, new Response.ErrorListener() {
+                },
+                error -> {
+                    Toast.makeText(this, "Erreur serveur", Toast.LENGTH_SHORT).show();
+                    error.printStackTrace();
+                });
+
+        rq.add(request);
+    }
+
+    public void onDeleteAlteredKeypoint(Keypoint kp) {
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/deleteAssigned/" + currentTravel.id + "/" + kp.id;
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/deleteAssigned/" + currentTravel.id + "/" + kp.id;
+
+        StringRequest request = new StringRequest(Request.Method.DELETE, url,
+                response -> {
+                    try {
+                        JSONObject json = new JSONObject(response);
+                        boolean success = json.getBoolean("success");
+
+                        if (success) {
+                            JSONObject travelJson = json.getJSONObject("travel");
+
+                            // Mise à jour des informations du voyage
+                            currentTravel.individualPrice = (float) travelJson.getDouble("individual_price");
+                            currentTravel.totalPrice = (float) travelJson.getDouble("total_price");
+                            currentTravel.startDate = travelJson.optString("travel_start_date", "N/A");
+                            currentTravel.endDate = travelJson.optString("travel_end_date", "N/A");
+
+                            // Mise à jour de l'UI
+                            tvIndividualPrice.setText(String.format("%.2f €", currentTravel.individualPrice));
+                            tvTotalPrice.setText(String.format("%.2f €", currentTravel.totalPrice));
+                            tvStartDate.setText(currentTravel.startDate);
+                            tvEndDate.setText(currentTravel.endDate);
+
+                            Toast.makeText(this, "Lieu supprimé du voyage", Toast.LENGTH_SHORT).show();
+
+                            // Recharger la liste des keypoints pour mettre à jour la carte + recycler
+                            fetchKeypointsForTravel(currentTravel.id);
+                        } else {
+                            Toast.makeText(this, "Erreur lors de la suppression", Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (JSONException e) {
+                        Toast.makeText(this, "Erreur JSON", Toast.LENGTH_SHORT).show();
+                        e.printStackTrace();
+                    }
+                },
+                error -> {
+                    Toast.makeText(this, "Erreur suppression", Toast.LENGTH_SHORT).show();
+                    error.printStackTrace();
+                }) {
             @Override
-            public void onErrorResponse(VolleyError error) {
-                error.printStackTrace();
-                Toast.makeText(TravelDetailsActivity.this, "Erreur de connexion au serveur.", Toast.LENGTH_SHORT).show();
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Authorization", token);
+                headers.put("Accept", "application/json");
+                return headers;
             }
-        });
-        queue.add(request);
+        };
+
+        rq.add(request);
     }
 
     public void handleErrors(Throwable t) {
-        Toast.makeText(this, "SERVERSIDE PROBLEM", Toast.LENGTH_LONG).show();
-        Log.e("HELLOJWT", "SERVERSIDE BUG", t);
+        Toast.makeText(this, "Erreur serveur", Toast.LENGTH_LONG).show();
+        Log.e("ERROR", "BUG", t);
     }
 }

@@ -108,6 +108,11 @@
                 android:textColor="#dddefa"
                 android:textSize="16dp"/>
         </LinearLayout>
+
+        <include
+            layout="@layout/altered_keypoint_details"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
     </LinearLayout>
 
     <Space

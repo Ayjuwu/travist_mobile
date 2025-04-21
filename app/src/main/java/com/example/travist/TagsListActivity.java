@@ -64,7 +64,8 @@ public class TagsListActivity extends AppCompatActivity implements TagAdapter.On
 
 
     private void requestTags() {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTags";
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getTags";
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTags";
         StringRequest req = new StringRequest(Request.Method.GET, url,
                 this::processTags,
                 err -> Toast.makeText(this, "Erreur réseau", Toast.LENGTH_SHORT).show()
@@ -102,7 +103,8 @@ public class TagsListActivity extends AppCompatActivity implements TagAdapter.On
 
     @Override
     public void onDelete(Tag tag) {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/deleteTag/" + tag.id;
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/deleteTag/" + tag.id;
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/deleteTag/" + tag.id;
         StringRequest req = new StringRequest(Request.Method.DELETE, url,
                 response -> {
                     tagList.remove(tag);

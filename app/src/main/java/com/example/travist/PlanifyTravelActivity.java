@@ -190,7 +190,8 @@ public class PlanifyTravelActivity extends AppCompatActivity {
     }
 
     private void requestKeypoints() {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getKeypoints";
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getKeypoints";
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getKeypoints";
 
         StringRequest req = new StringRequest(Request.Method.GET, url, this::processKeypoints, this::handleErrors) {
             @Override
@@ -404,7 +405,8 @@ public class PlanifyTravelActivity extends AppCompatActivity {
 
             Log.i("HELLOJWT", "Données envoyées : " + travelData.toString());
 
-            String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/createTravel";
+            // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/createTravel";
+            String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/createTravel";
 
             StringRequest postRequest = new StringRequest(Request.Method.POST, url,
                     response -> {
@@ -500,7 +502,8 @@ public class PlanifyTravelActivity extends AppCompatActivity {
             return;
         }
 
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/insertAssigned";
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/insertAssigned";
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/insertAssigned";
 
         StringRequest postRequest = new StringRequest(Request.Method.POST, url,
                 response -> {
@@ -550,7 +553,8 @@ public class PlanifyTravelActivity extends AppCompatActivity {
 
     // On vérifie si un voyage avec le même nom existe déjà dans la base de données
     private void isTravelNameExists(OnTravelNameCheckListener listener) {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTravelsByUser/" + currentUserId;
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getTravelsByUser/" + currentUserId;
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTravelsByUser/" + currentUserId;
         StringRequest req = new StringRequest(Request.Method.GET, url,
                 response -> searchTravelName(response, listener),
                 this::handleErrors
@@ -599,7 +603,7 @@ public class PlanifyTravelActivity extends AppCompatActivity {
     }
 
     private void handleSuccess(String logMessage, String toastMessage) {
-        Log.i("PlanifyActivity", logMessage);
+        Log.i("PlanifyTravelActivity", logMessage);
         Toast.makeText(this, toastMessage, Toast.LENGTH_LONG).show();
         KpListHolderPlanify.resetKeypoints();
         saveBtn.setEnabled(true);

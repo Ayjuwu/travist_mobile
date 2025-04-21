@@ -51,7 +51,7 @@
         private SelectedKeypointsModifyAdapter selectedKpAdapter;
         private ViewPager2 viewPager2;
         private TextView tvIndividualPrice, tvTotalPrice;
-        private EditText etPeopleNumber;
+        private EditText etName, etPeopleNumber;
 
         public static Map<Integer, String> visitStartDates = new HashMap<>();
         public static Map<Integer, String> visitEndDates = new HashMap<>();
@@ -137,9 +137,13 @@
 
 
             // Référence à l'EditText et à la TextView pour les prix
+            etName = findViewById(R.id.etModifyTravelName);
             etPeopleNumber = findViewById(R.id.etModifyPeopleNumber);
             tvIndividualPrice = findViewById(R.id.tvModifyIndividualPrice);
             tvTotalPrice = findViewById(R.id.tvModifyTotalPrice);
+
+            etName.setText(currentTravel.name);
+            etPeopleNumber.setText(String.valueOf(currentTravel.peopleNumber));
 
 
             // Ajout du TextWatcher pour mettre à jour le prix total dès la modification de la valeur
@@ -204,7 +208,8 @@
         }
 
         private void fetchAllKeypoints() {
-            String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getKeypoints";
+            // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getKeypoints";
+            String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getKeypoints";
             StringRequest req = new StringRequest(Request.Method.GET, url,
                     this::onAllKeypointsLoaded,
                     this::handleErrors
@@ -243,7 +248,8 @@
 
 
         private void fetchTravelKeypoints(int travelId) {
-            String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getKeypointsByTravel/" + travelId;
+            // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getKeypointsByTravel/" + travelId;
+            String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getKeypointsByTravel/" + travelId;
             StringRequest req = new StringRequest(Request.Method.GET, url,
                     this::onTravelKeypointsLoaded,
                     this::handleErrors
@@ -467,7 +473,8 @@
                     return;
                 }
 
-                String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/updateTravel/" + currentTravel.id;
+                // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/updateTravel/" + currentTravel.id;
+                String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/updateTravel/" + currentTravel.id;
 
                 StringRequest postRequest = new StringRequest(Request.Method.POST, url,
                         response -> {
@@ -523,7 +530,8 @@
         }
 
         private void isTravelNameExistsForUpdate(String nameToCheck, OnTravelNameCheckListener listener) {
-            String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTravelsByUser/" + currentUserId;
+            // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getTravelsByUser/" + currentUserId;
+            String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTravelsByUser/" + currentUserId;
             StringRequest req = new StringRequest(Request.Method.GET, url,
                     response -> {
                         try {
@@ -566,7 +574,8 @@
                 handleError("Erreur JSON", "Impossible de préparer l'assignation.");
                 return;
             }
-            String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/updateAssigned/" + currentTravel.id;
+            // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/updateAssigned/" + currentTravel.id;
+            String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/updateAssigned/" + currentTravel.id;
 
             StringRequest postRequest = new StringRequest(Request.Method.POST, url,
                     response -> {
@@ -656,7 +665,7 @@
         }
 
         private void handleSuccess(String logMessage, String toastMessage) {
-            Log.i("PlanifyActivity", logMessage);
+            Log.i("ModifyTravelActivity", logMessage);
             Toast.makeText(this, toastMessage, Toast.LENGTH_LONG).show();
             KpListHolderModify.resetKeypoints();
             saveModifyBtn.setEnabled(true);

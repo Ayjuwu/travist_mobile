@@ -65,7 +65,8 @@ public class CitiesListActivity extends AppCompatActivity implements CityAdapter
     }
 
     private void requestCities() {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getCities";
+        // String url = "http://192.168.0.110/www/PPE_Travist/travist/public/api/getCities";
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getCities";
 
         StringRequest req = new StringRequest(Request.Method.GET, url, this::processCities, this::handleErrors) {
             @Override
@@ -113,7 +114,8 @@ public class CitiesListActivity extends AppCompatActivity implements CityAdapter
 
     @Override
     public void onDelete(City city) {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/deleteCity/" + city.id;
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/deleteCity/" + city.id;
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/deleteCity/" + city.id;
         StringRequest req = new StringRequest(Request.Method.DELETE, url,
                 response -> {
                     cityList.remove(city);

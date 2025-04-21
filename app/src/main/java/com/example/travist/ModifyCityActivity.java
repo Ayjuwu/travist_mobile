@@ -76,7 +76,8 @@ public class ModifyCityActivity extends AppCompatActivity {
         cityName = etCityName.getText().toString().trim();
         cityCountryName = etCityCountryName.getText().toString().trim();
 
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/updateCity/" + cityId;
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/updateCity/" + cityId;
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/updateCity/" + cityId;
 
         JSONObject jsonBody = new JSONObject();
         try {

@@ -119,7 +119,8 @@ public class CreateKeypointActivity extends AppCompatActivity {
 
     // Chargement des villes
     private void loadCities() {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getCities";
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getCities";
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getCities";
         Volley.newRequestQueue(this).add(new StringRequest(Request.Method.GET, url,
                 this::onCitiesLoaded,
                 err -> Toast.makeText(this, "Erreur chargement villes", Toast.LENGTH_SHORT).show()
@@ -153,7 +154,8 @@ public class CreateKeypointActivity extends AppCompatActivity {
 
     // Chargement des tags
     private void loadTags() {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTags";
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getTags";
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTags";
         Volley.newRequestQueue(this).add(new StringRequest(Request.Method.GET, url,
                 this::onTagsLoaded,
                 err -> Toast.makeText(this, "Erreur chargement tags", Toast.LENGTH_SHORT).show()
@@ -290,7 +292,8 @@ public class CreateKeypointActivity extends AppCompatActivity {
             body.put("city_id", cityList.get(spinnerCity.getSelectedItemPosition()).id);
             body.put("tags", tagsArr);
 
-            String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/createKeypoint";
+            // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/createKeypoint";
+            String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/createKeypoint";
             JsonObjectRequest req = new JsonObjectRequest(Request.Method.POST, url, body,
                     resp -> {
                         Toast.makeText(this, "Keypoint créé !", Toast.LENGTH_SHORT).show();

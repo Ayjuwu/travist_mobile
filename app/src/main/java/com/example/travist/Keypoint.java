@@ -1,6 +1,8 @@
 package com.example.travist;
 
-public class Keypoint {
+import java.io.Serializable;
+
+public class Keypoint implements Serializable {
     public int id;
     public String name;
     public float price;

@@ -64,7 +64,7 @@ public class Profile extends AppCompatActivity {
     public void requestDetails() {
 
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/profile";
-        String url="http://10.0.2.2/www/PPE_Travist/travist/public/api/profile";
+        String url="http://10.0.2.2/~mathys.raspolini/travist/public/api/profile";
         StringRequest req = new StringRequest(Request.Method.GET, url, this::processDetails, this::handleErrors) {
             public Map<String, String> getHeaders() throws AuthFailureError {
                 Map<String, String> params = new HashMap<String, String>();
@@ -98,7 +98,8 @@ public class Profile extends AppCompatActivity {
             tvPs.setText(userName);
 
             // Appel pour récupérer les voyages, en utilisant userId
-            String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTravelsByUser/" + userId;
+            // String url="http://192.168.0.110/~mathys.raspolini/travist/public/api/getTravelsByUser/" + userId;
+            String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTravelsByUser/" + userId;
             StringRequest req = new StringRequest(Request.Method.GET, url, this::processUserTravels, this::handleErrors) {
                 @Override
                 public Map<String, String> getHeaders() throws AuthFailureError {

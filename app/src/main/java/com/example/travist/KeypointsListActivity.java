@@ -63,7 +63,8 @@ public class KeypointsListActivity extends AppCompatActivity implements Keypoint
         kpList.clear();
         kpAdapter.notifyDataSetChanged();
 
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getKeypoints";
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getKeypoints";
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getKeypoints";
         Volley.newRequestQueue(this).add(
                 new StringRequest(Request.Method.GET, url,
                         this::processKeypoints,
@@ -105,7 +106,8 @@ public class KeypointsListActivity extends AppCompatActivity implements Keypoint
     }
 
     private void requestAllCities(Runnable next) {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getCities";
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getCities";
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getCities";
         Volley.newRequestQueue(this).add(
                 new StringRequest(Request.Method.GET, url,
                         resp -> {
@@ -131,7 +133,8 @@ public class KeypointsListActivity extends AppCompatActivity implements Keypoint
     }
 
     private void requestAllTags(Runnable next) {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTags";
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getTags";
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTags";
         Volley.newRequestQueue(this).add(
                 new StringRequest(Request.Method.GET, url,
                         resp -> {
@@ -157,7 +160,8 @@ public class KeypointsListActivity extends AppCompatActivity implements Keypoint
     }
 
     private void requestTags(int kpId) {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getTagsByKeypoint/" + kpId;
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getTagsByKeypoint/" + kpId;
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTagsByKeypoint/" + kpId;
         Volley.newRequestQueue(this).add(
                 new StringRequest(Request.Method.GET, url,
                         response -> {
@@ -201,7 +205,8 @@ public class KeypointsListActivity extends AppCompatActivity implements Keypoint
 
     @Override
     public void onDelete(Keypoint kp) {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/deleteKeypoint/" + kp.id;
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/deleteKeypoint/" + kp.id;
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/deleteKeypoint/" + kp.id;
         Volley.newRequestQueue(this).add(
                 new StringRequest(Request.Method.DELETE, url,
                         resp -> {

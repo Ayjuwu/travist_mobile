@@ -55,7 +55,9 @@ public class CreateCityActivity extends AppCompatActivity {
         cityName = etCityName.getText().toString().trim();
         cityCountryName = etCountryName.getText().toString().trim();
 
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/createCity";
+        // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/createCity";
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/createCity";
+
 
         JSONObject jsonBody = new JSONObject();
         try {
