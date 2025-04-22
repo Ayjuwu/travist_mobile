@@ -105,7 +105,7 @@ public class TagsListActivity extends AppCompatActivity implements TagAdapter.On
     public void onDelete(Tag tag) {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/deleteTag/" + tag.id;
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/deleteTag/" + tag.id;
-        StringRequest req = new StringRequest(Request.Method.DELETE, url,
+        StringRequest req = new StringRequest(Request.Method.POST, url,
                 response -> {
                     tagList.remove(tag);
                     tagAdapter.notifyDataSetChanged();

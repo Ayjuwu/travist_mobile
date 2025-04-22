@@ -208,7 +208,7 @@ public class KeypointsListActivity extends AppCompatActivity implements Keypoint
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/deleteKeypoint/" + kp.id;
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/deleteKeypoint/" + kp.id;
         Volley.newRequestQueue(this).add(
-                new StringRequest(Request.Method.DELETE, url,
+                new StringRequest(Request.Method.POST, url,
                         resp -> {
                             kpList.remove(kp);
                             kpAdapter.notifyDataSetChanged();

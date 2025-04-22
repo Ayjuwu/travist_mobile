@@ -129,7 +129,7 @@ public class TravelDetailsActivity extends AppCompatActivity {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/deleteTravel/" + travelId;
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/deleteTravel/" + travelId;
 
-        StringRequest req = new StringRequest(Request.Method.DELETE, url,
+        StringRequest req = new StringRequest(Request.Method.POST, url,
                 this::processCurrentTravelDeletion,
                 this::handleErrors
         ) {
@@ -231,7 +231,7 @@ public class TravelDetailsActivity extends AppCompatActivity {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/deleteAssigned/" + currentTravel.id + "/" + kp.id;
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/deleteAssigned/" + currentTravel.id + "/" + kp.id;
 
-        StringRequest request = new StringRequest(Request.Method.DELETE, url,
+        StringRequest request = new StringRequest(Request.Method.POST, url,
                 response -> {
                     try {
                         JSONObject json = new JSONObject(response);
