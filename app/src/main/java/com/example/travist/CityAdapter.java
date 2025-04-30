@@ -12,25 +12,30 @@ import java.util.List;
 
 public class CityAdapter extends RecyclerView.Adapter<CityAdapter.ViewHolder> {
 
+    // Interface dédiée pour chaque élément de l'adapter
     public interface OnCityActionListener {
         void onModify(City city);
         void onDelete(City city);
     }
 
+    // Initialisation des variables
     private List<City> cities;
     private CityAdapter.OnCityActionListener listener;
 
+    // Contructeur de l'adapter
     public CityAdapter(List<City> cities, OnCityActionListener listener) {
         this.cities = cities;
         this.listener = listener;
     }
 
+    // Méthode onCreateViewHolder pour la gestion du layout de l'item, en fonction de sa vue
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.city_item, parent, false);
         return new ViewHolder(view);
     }
 
+    // Méthode onBindViewHolder pour définir les attributs de l'item (vue + appel des méthodes du listener => interface)
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         City city = cities.get(position);
@@ -41,11 +46,13 @@ public class CityAdapter extends RecyclerView.Adapter<CityAdapter.ViewHolder> {
         holder.btnDelete.setOnClickListener(v -> listener.onDelete(city));
     }
 
+    // Méthode pour retourner le nombre d'items dans l'adapter
     @Override
     public int getItemCount() {
         return cities.size();
     }
 
+    // Classe ViewHolder pour définir et attribuer les éléments de la vue
     public class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvCityId;
         TextView tvCityName;

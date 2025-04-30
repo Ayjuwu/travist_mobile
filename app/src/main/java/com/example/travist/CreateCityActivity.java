@@ -24,17 +24,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class CreateCityActivity extends AppCompatActivity {
+    // Initialisation des variables
     private RequestQueue rq;
-    private EditText etCityName;
-    private EditText etCountryName;
-    private Button btnNewSave;
-    private String cityName;
-    private String cityCountryName;
+    private String token = UserSession.getToken();
+
+    EditText etCityName, etCountryName;
+    Button btnNewSave;
+    String cityName, cityCountryName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
+
         setContentView(R.layout.activity_create_city);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -42,16 +44,19 @@ public class CreateCityActivity extends AppCompatActivity {
             return insets;
         });
 
+        // Initialisation de Volley
         rq = Volley.newRequestQueue(this);
 
         etCityName = findViewById(R.id.etCityName);
         etCountryName = findViewById(R.id.etCountryName);
 
+        // Attribution et appel du bouton pour créer une nouvelle ville
         btnNewSave = findViewById(R.id.addNewCity);
-        btnNewSave.setOnClickListener(v -> addTag());
+        btnNewSave.setOnClickListener(view -> addCity());
     }
 
-    private void addTag() {
+    // Méthode WebService pour créer une nouvelle ville
+    private void addCity() {
         cityName = etCityName.getText().toString().trim();
         cityCountryName = etCountryName.getText().toString().trim();
 
@@ -68,9 +73,7 @@ public class CreateCityActivity extends AppCompatActivity {
         }
 
         JsonObjectRequest req = new JsonObjectRequest(
-                Request.Method.POST,
-                url,
-                jsonBody,
+                Request.Method.POST, url, jsonBody,
                 response -> {
                     Toast.makeText(this, "Ville créée avec succès !", Toast.LENGTH_SHORT).show();
                     finish();
@@ -84,10 +87,11 @@ public class CreateCityActivity extends AppCompatActivity {
                 }
         ) {
             @Override
-            public Map<String,String> getHeaders() throws AuthFailureError {
-                Map<String,String> hdrs = new HashMap<>();
-                hdrs.put("Content-Type","application/json; charset=UTF-8");
-                return hdrs;
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         };
 

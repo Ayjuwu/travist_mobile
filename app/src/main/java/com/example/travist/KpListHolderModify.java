@@ -8,7 +8,7 @@ public class KpListHolderModify {
     public static List<Keypoint> selectedKeypointsModify = new ArrayList<>();
 
     public static void addKeypoint(Keypoint kp) {
-        // On vérifie qu’on n'ajout pas un keypoint deux fois
+        // On vérifie qu’on n'ajoute pas un keypoint deux fois
         for (Keypoint existing : selectedKeypointsModify) {
             if (existing.id == kp.id) {
                 return;

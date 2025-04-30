@@ -17,32 +17,37 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class SelectedKeypointsPlanifyAdapter extends RecyclerView.Adapter<SelectedKeypointsPlanifyAdapter.ViewHolder> {
-
+    // Initialisation des variables
     private OnItemRemoveListener removeListener;
     public static Map<Integer, String> visitStartDates = new HashMap<>();
     public static Map<Integer, String> visitEndDates = new HashMap<>();
 
+    // Constructeur de l'Adapter
     public SelectedKeypointsPlanifyAdapter(OnItemRemoveListener removeListener) {
         this.removeListener = removeListener;
     }
 
+    // Méthode onCreateViewHolder pour la gestion du layout de l'item, en fonction de sa vue
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.selected_kp_item, parent, false);
         return new ViewHolder(view);
     }
 
+    // Méthode onBindViewHolder pour définir les attributs de l'item
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         Keypoint kp = KpListHolderPlanify.selectedKeypointsPlanify.get(position);
         holder.bind(kp);
     }
 
+    // Méthode pour retourner le nombre d'items dans l'adapter
     @Override
     public int getItemCount() {
         return KpListHolderPlanify.selectedKeypointsPlanify.size();
     }
 
+    // Classe ViewHolder pour définir et attribuer les éléments de la vue
     public class ViewHolder extends RecyclerView.ViewHolder {
 
         TextView tvKeypointName;
@@ -70,6 +75,7 @@ public class SelectedKeypointsPlanifyAdapter extends RecyclerView.Adapter<Select
             });
         }
 
+        // Méthode pour afficher les dates de visites des lieux sélectionnés
         private void showDate(boolean isStart) {
             int pos = getAdapterPosition();
             if (pos == RecyclerView.NO_POSITION) return;
@@ -105,6 +111,7 @@ public class SelectedKeypointsPlanifyAdapter extends RecyclerView.Adapter<Select
             etEndDate.setText(end != null ? end : kp.endDate);
         }
 
+        // Méthode pour afficher le DatePicker
         private void showDatePickerDialog(EditText editText, long min, long max, long initial, OnDateSelectedListener listener) {
             Calendar c = Calendar.getInstance();
             c.setTimeInMillis(initial);
@@ -120,6 +127,7 @@ public class SelectedKeypointsPlanifyAdapter extends RecyclerView.Adapter<Select
             dialog.show();
         }
 
+        // Méthode pour parser une date dans le bon format
         private long parseDate(String dateStr) {
             try {
                 return new SimpleDateFormat("yyyy-MM-dd").parse(dateStr).getTime();
@@ -129,6 +137,7 @@ public class SelectedKeypointsPlanifyAdapter extends RecyclerView.Adapter<Select
         }
     }
 
+    /* --- Interfaces pour les éléments de l'adapter --- */
     public interface OnItemRemoveListener {
         void onRemove(Keypoint kp);
     }
@@ -136,4 +145,5 @@ public class SelectedKeypointsPlanifyAdapter extends RecyclerView.Adapter<Select
     public interface OnDateSelectedListener {
         void onDateSelected(String date);
     }
+    /* ------------------------------------------------- */
 }

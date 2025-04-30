@@ -12,7 +12,6 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -23,6 +22,7 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
@@ -40,20 +40,29 @@ import java.util.Locale;
 import java.util.Map;
 
 public class PlanifyTravelActivity extends AppCompatActivity {
+    // initialisation des variables
     private RequestQueue rq;
-    private String token;
-    private Button saveBtn;
-    private ViewPager2 viewPager2;
-    private SliderAdapter sliderAdapter;
-    private SelectedKeypointsPlanifyAdapter selectedKpAdapter;
-    private List<SliderItem> sliderItems = new ArrayList<>();
-    UserSession session = UserSession.getInstance();
-    int currentUserId = session.getUserId();
-    public static Map<Integer, String> visitStartDates = new HashMap<>();
-    public static Map<Integer, String> visitEndDates = new HashMap<>();
+    private String token = UserSession.getToken();
+    private int currentUserId = UserSession.getUserId();
 
-    private final Handler sliderHandler = new Handler();
-    private final Runnable sliderRunnable = new Runnable() {
+    Button saveBtn;
+
+    EditText etTravelName, etPeopleNumber;
+    TextView tvTotalPrice, tvIndividualPrice;
+
+    ViewPager2 viewPager2;
+    SliderAdapter sliderAdapter;
+    SelectedKeypointsPlanifyAdapter selectedKpAdapter;
+
+    List<Keypoint> allKeypoints = new ArrayList<>();
+    List<SliderItem> sliderItems = new ArrayList<>();
+
+    static Map<Integer, String> visitStartDates = new HashMap<>();
+    static Map<Integer, String> visitEndDates = new HashMap<>();
+
+    // Initialisations pour le slider
+    Handler sliderHandler = new Handler();
+    Runnable sliderRunnable = new Runnable() {
         @Override
         public void run() {
             int currentItem = viewPager2.getCurrentItem();
@@ -72,18 +81,15 @@ public class PlanifyTravelActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_planify);
 
-
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
-
         // Initialisation UI
         viewPager2 = findViewById(R.id.viewPagerImageSlider);
         saveBtn = findViewById(R.id.saveNewTravelBtn);
-
 
         // RecyclerView pour les lieux sélectionnés
         RecyclerView rvSelectedKp = findViewById(R.id.recyclerSelectedKeypoints);
@@ -97,8 +103,13 @@ public class PlanifyTravelActivity extends AppCompatActivity {
                         KpListHolderPlanify.selectedKeypointsPlanify.remove(kp);
                         visitStartDates.remove(kp.id);
                         visitEndDates.remove(kp.id);
-                        requestKeypoints();
+
+                        // On reconstruit entièrement le carrousel
+                        buildSliderItems();
+
+                        // On notifie les deux adapters
                         selectedKpAdapter.notifyDataSetChanged();
+                        sliderAdapter.notifyDataSetChanged();
 
                         // Ajout dans le carrousel si pas déjà présent
                         boolean alreadyInSlider = false;
@@ -117,32 +128,25 @@ public class PlanifyTravelActivity extends AppCompatActivity {
         );
         rvSelectedKp.setAdapter(selectedKpAdapter);
 
-
         // Initialisation de l'adapter du carrousel
         sliderAdapter = new SliderAdapter(sliderItems, kpId -> {
             Intent intent = new Intent(this, KeypointDetailsActivity.class);
-            intent.putExtra("token", token);
             intent.putExtra("kpId", kpId);
             intent.putExtra("precedentActivity", this.getLocalClassName().toString());
             startActivity(intent);
         });
         viewPager2.setAdapter(sliderAdapter);
 
-
-        // Initialisation Volley
+        // Initialisation de Volley
         rq = Volley.newRequestQueue(this);
-        Intent i = getIntent();
-        token = i.getStringExtra("token");
-        Log.i("HELLOJWT", "token " + token);
-
 
         // Appel du WebService pour récupérer les keypoints
-        requestKeypoints();
-
+        startLoadingKeypoints();
 
         // Référence à l'EditText et à la TextView pour les prix
-        EditText etPeopleNumber = findViewById(R.id.etPeopleNumber);
-        TextView tvTotalPrice = findViewById(R.id.tvTotalPrice);
+        etPeopleNumber = findViewById(R.id.etPeopleNumber);
+        tvTotalPrice = findViewById(R.id.tvTotalPrice);
+        tvIndividualPrice = findViewById(R.id.tvIndividualPrice);
 
 
         // Ajout du TextWatcher pour mettre à jour le prix total dès la modification de la valeur
@@ -168,104 +172,98 @@ public class PlanifyTravelActivity extends AppCompatActivity {
 
         // Bouton pour sauvegarder le nouveau voyage
         saveBtn.setOnClickListener(view -> {
-            saveBtn.setEnabled(false);
             createAndSaveNewTravel();
+
             Intent intent = new Intent(this, Profile.class);
-            intent.putExtra("token", token);
             startActivity(intent);
             finish();
         });
     }
 
+    // Méthode onStart pour lancer le délai initial du carrousel lors du lancement de l'activité
     @Override
     protected void onStart() {
         super.onStart();
         sliderHandler.postDelayed(sliderRunnable, 2250);
     }
 
+    // Méthode onStop pour stopper le carrousel
     @Override
     protected void onStop() {
         super.onStop();
         sliderHandler.removeCallbacks(sliderRunnable);
     }
 
+    // Méthode onResume pour update le carrousel et les adapters au retour d'une activité
+    @Override
+    protected void onResume() {
+        super.onResume();
+        buildSliderItems();
+
+        sliderAdapter.notifyDataSetChanged();
+        selectedKpAdapter.notifyDataSetChanged();
+    }
+
+    private void startLoadingKeypoints() {
+        allKeypoints.clear();
+        sliderItems.clear();
+        KpListHolderPlanify.selectedKeypointsPlanify.clear();
+        visitStartDates.clear();
+        visitEndDates.clear();
+
+        requestKeypoints();
+    }
+
+    // Méthode WebService pour récupérer tous les lieux
     private void requestKeypoints() {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getKeypoints";
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getKeypoints";
-
-        StringRequest req = new StringRequest(Request.Method.GET, url, this::processKeypoints, this::handleErrors) {
+        StringRequest req = new StringRequest(Request.Method.GET, url, this::processKeypoints, this::handleErrors
+        ) {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
-                return new HashMap<>();
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         };
 
         rq.add(req);
     }
 
+    // Méthode WebService pour procéder à la récupération de tous les lieux
     private void processKeypoints(String response) {
         try {
             JSONArray jsonArray = new JSONArray(response);
-
-            TextView tvTotalPrice = findViewById(R.id.tvTotalPrice);
-            TextView tvIndividualPrice = findViewById(R.id.tvIndividualPrice);
-            EditText etPeopleNumber = findViewById(R.id.etPeopleNumber);
-
-            String peopleNumberStr = etPeopleNumber.getText().toString();
-            int peopleNumber = Integer.parseInt(peopleNumberStr);
-
-            if (jsonArray.length() != 0) {
-                sliderItems.clear();
-                List<Keypoint> selectedKeypoints = KpListHolderPlanify.selectedKeypointsPlanify;
-
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    JSONObject kp = jsonArray.getJSONObject(i);
-                    int kpId = kp.getInt("id");
-                    int is_altered_keypoint = kp.getInt("is_altered_keypoint");
-                    if (is_altered_keypoint == 1) {
-                        continue;
-                    }
-                    boolean alreadySelected = false;
-                    for (Keypoint selected : selectedKeypoints) {
-                        if (selected.id == kpId) {
-                            alreadySelected = true;
-                            break;
-                        }
-                    }
-                    if (alreadySelected) {
-                        continue;
-                    }
-                    String kpCover = kp.getString("key_point_cover");
-                    sliderItems.add(new SliderItem(kpId, kpCover));
-                }
-
-                if (peopleNumber >= 1) {
-                    tvIndividualPrice.setText(KpListHolderPlanify.calculateIndividualPrice() + "€");
-                    tvTotalPrice.setText(KpListHolderPlanify.calculateTotalPrice(peopleNumber) + "€");
-                }
-
-                ConstraintLayout carouselContainer = findViewById(R.id.carouselLayout);
-
-                int totalAvailableKeypoints = jsonArray.length();
-                int selectedKeypointsCount = KpListHolderPlanify.selectedKeypointsPlanify.size();
-
-                if (selectedKeypointsCount >= totalAvailableKeypoints) {
-                    carouselContainer.setVisibility(View.GONE);
-                } else {
-                    carouselContainer.setVisibility(View.VISIBLE);
-                }
-
-                sliderAdapter.notifyDataSetChanged();
-                selectedKpAdapter.notifyDataSetChanged();
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject jo = jsonArray.getJSONObject(i);
+                Keypoint kp = new Keypoint(
+                        jo.getInt("id"),
+                        jo.getString("key_point_name"),
+                        (float)jo.getDouble("key_point_price"),
+                        jo.getString("key_point_start_date"),
+                        jo.getString("key_point_end_date"),
+                        jo.getString("key_point_cover"),
+                        (float)jo.getDouble("key_point_gps_x"),
+                        (float)jo.getDouble("key_point_gps_y"),
+                        jo.getInt("is_altered_keypoint"),
+                        jo.getInt("city_id")
+                );
+                allKeypoints.add(kp);
             }
-        } catch (JSONException x) {
-            handleError("JSON PARSE ERROR: " + response, "Erreur de traitement des données JSON");
+
+            buildSliderItems();
+
+        } catch (JSONException e) {
+            handleError("JSON PARSE ERROR", e.getMessage());
         }
     }
 
+    // Méthode WebService principale pour créer le nouveau voyage, avec toutes les vérifications
     private void createAndSaveNewTravel() {
-        EditText etTravelName = findViewById(R.id.etTravelName);
-        EditText etPeopleNumber = findViewById(R.id.etPeopleNumber);
+        etTravelName = findViewById(R.id.etTravelName);
+        etPeopleNumber = findViewById(R.id.etPeopleNumber);
 
         String travelName = etTravelName.getText().toString();
         String peopleNumberStr = etPeopleNumber.getText().toString();
@@ -408,27 +406,21 @@ public class PlanifyTravelActivity extends AppCompatActivity {
             // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/createTravel";
             String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/createTravel";
 
-            StringRequest postRequest = new StringRequest(Request.Method.POST, url,
+            JsonObjectRequest jsonRequest = new JsonObjectRequest(Request.Method.POST, url, travelData,
                     response -> {
                         try {
-                            JSONObject jsonResponse = new JSONObject(response);
-                            Log.i("HELLOJWT", "Réponse JSON: " + response);
+                            JSONObject jsonResponse = new JSONObject(String.valueOf(response));
                             boolean success = jsonResponse.optBoolean("success", false);
 
                             if (success) {
-                                JSONObject tData = jsonResponse.optJSONObject("data");
+                                JSONObject tData = jsonResponse.getJSONObject("data");
+
                                 if (tData != null) {
-                                    int newTravelId = tData.optJSONObject("travel").optInt("id", -1);
-                                    Log.i("HELLOJWT", "ID du voyage créé : " + newTravelId);
-                                    if (newTravelId != -1) {
-                                        insertAssigned(newTravelId, selectedKeypointsList);
-                                        handleSuccess("Voyage créé avec succès !", "Voyage créé avec succès !");
-                                    } else {
-                                        handleError("Erreur lors de la création du voyage", "Erreur lors de la création du voyage");
-                                    }
+                                    int newTravelId = tData.getJSONObject("travel").getInt("id");
+                                    insertAssigned(newTravelId, selectedKeypointsList);
                                 }
                             } else {
-                                handleError("Erreur lors de la création du voyage", "Erreur lors de la création du voyage");
+                                handleError("Erreur lors de l'assignation des lieux", "Erreur lors de l'assignation des lieux");
                             }
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -441,34 +433,26 @@ public class PlanifyTravelActivity extends AppCompatActivity {
                     }
             ) {
                 @Override
-                public byte[] getBody() {
-                    return travelData.toString().getBytes();
-                }
-
-                @Override
-                public String getBodyContentType() {
-                    return "application/json; charset=UTF-8";
-                }
-
-                @Override
-                public Map<String, String> getHeaders() {
+                public Map<String, String> getHeaders() throws AuthFailureError {
                     Map<String, String> headers = new HashMap<>();
-                    headers.put("Content-Type", "application/json; charset=UTF-8");
+                    headers.put("Accept", "application/json");
+                    headers.put("Authorization", token);
                     return headers;
                 }
             };
 
-            rq.add(postRequest);
+            rq.add(jsonRequest);
         });
     }
 
+    // Méthode WebService pour insérer les lieux liés au voyage dans la table associative
     private void insertAssigned(int travelId, List<Keypoint> keypoints) {
         JSONObject assignedData = new JSONObject();
         try {
             // Ajouter l'ID du voyage
             assignedData.put("travel_id", travelId);
 
-            // Ajouter les keypoints associés avec leurs dates
+            // Ajouter les lieux associés avec leurs dates
             JSONArray ja = new JSONArray();
             for (Keypoint kp : keypoints) {
                 // Récupérer les dates depuis les maps
@@ -485,8 +469,6 @@ public class PlanifyTravelActivity extends AppCompatActivity {
                     visitEndDates.put(kp.id, end);
                 }
 
-                Log.d("ASSIGN_DEBUG", "Keypoint ID: " + kp.id + " Start: " + start + " End: " + end);
-
                 JSONObject keypointObj = new JSONObject();
                 keypointObj.put("keypoint_id", kp.id);
                 keypointObj.put("start_date", start);
@@ -495,7 +477,6 @@ public class PlanifyTravelActivity extends AppCompatActivity {
             }
 
             assignedData.put("keypoints", ja);
-            Log.i("HELLOJWT", "Données envoyées pour assignation : " + assignedData.toString());
         } catch (JSONException e) {
             e.printStackTrace();
             KpListHolderPlanify.resetKeypoints();
@@ -505,16 +486,12 @@ public class PlanifyTravelActivity extends AppCompatActivity {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/insertAssigned";
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/insertAssigned";
 
-        StringRequest postRequest = new StringRequest(Request.Method.POST, url,
+        JsonObjectRequest jsonRequest = new JsonObjectRequest(Request.Method.POST, url, assignedData,
                 response -> {
                     try {
-                        JSONObject jsonResponse = new JSONObject(response);
+                        JSONObject jsonResponse = new JSONObject(String.valueOf(response));
                         Log.i("HELLOJWT", "Réponse assignation keypoints : " + response);
                         if (jsonResponse.optBoolean("success", false)) {
-
-                            Intent intent = new Intent(this, Profile.class);
-                            intent.putExtra("token", token);
-                            startActivity(intent);
                             finish();
                         } else {
                             handleError("Erreur lors de l'assignation des lieux", "Erreur lors de l'assignation des lieux");
@@ -530,24 +507,15 @@ public class PlanifyTravelActivity extends AppCompatActivity {
                 }
         ) {
             @Override
-            public byte[] getBody() {
-                return assignedData.toString().getBytes();
-            }
-
-            @Override
-            public String getBodyContentType() {
-                return "application/json; charset=UTF-8";
-            }
-
-            @Override
-            public Map<String, String> getHeaders() {
+            public Map<String, String> getHeaders() throws AuthFailureError {
                 Map<String, String> headers = new HashMap<>();
-                headers.put("Content-Type", "application/json; charset=UTF-8");
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
                 return headers;
             }
         };
 
-        rq.add(postRequest);
+        rq.add(jsonRequest);
     }
 
 
@@ -561,13 +529,17 @@ public class PlanifyTravelActivity extends AppCompatActivity {
         ) {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
-                return new HashMap<>();
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         };
 
         rq.add(req);
     }
 
+    // Méthode pour savoir si un nom de voyage existe déjà dans la base
     private void searchTravelName(String response, OnTravelNameCheckListener listener) {
         try {
             EditText etTravelName = findViewById(R.id.etTravelName);
@@ -578,8 +550,7 @@ public class PlanifyTravelActivity extends AppCompatActivity {
                 JSONObject travel = jsonArray.getJSONObject(i);
                 String existingName = travel.getString("travel_name").trim();
                 if (existingName.equalsIgnoreCase(nameToCheck)) {
-                    // Le nom existe déjà
-                    listener.onCheckComplete(true);
+                    listener.onCheckComplete(true); // Si le nom existe sur un autre voyage, alors on définit le listener sur true, et on interrompt le code
                     return;
                 }
             }
@@ -591,6 +562,56 @@ public class PlanifyTravelActivity extends AppCompatActivity {
         }
     }
 
+    // Méthode pour construire le carrousel
+    private void buildSliderItems() {
+        sliderItems.clear();
+
+        List<Keypoint> selected = KpListHolderPlanify.selectedKeypointsPlanify;
+        for (Keypoint kp : allKeypoints) {
+            if (kp.is_altered == 1) {
+                continue;
+            }
+
+            // On recalcule les prix
+            String pplStr = etPeopleNumber.getText().toString();
+            int ppl = 0;
+            if (!pplStr.isEmpty()) {
+                try {
+                    ppl = Integer.parseInt(pplStr);
+                } catch (NumberFormatException e) {
+                    ppl = 0; // Valeur par défaut en cas d'erreur de conversion
+                }
+            }
+            if (ppl > 0) {
+                tvIndividualPrice.setText(KpListHolderPlanify.calculateIndividualPrice() + "€");
+                tvTotalPrice.setText(KpListHolderPlanify.calculateTotalPrice(ppl) + "€");
+            }
+
+            boolean isSelected = false;
+            for (Keypoint sel : selected) {
+                if (sel.id == kp.id) {
+                    isSelected = true;
+                    break;
+                }
+            }
+            if (!isSelected) {
+                sliderItems.add(new SliderItem(kp.id, kp.cover));
+            }
+        }
+
+        // On vérifie s'il y a des éléments dans le carrousel, sinon on le cache
+        View carousel = findViewById(R.id.carouselLayout);
+        if (sliderItems.isEmpty()) {
+            carousel.setVisibility(View.GONE);
+        } else {
+            carousel.setVisibility(View.VISIBLE);
+        }
+
+        sliderAdapter.notifyDataSetChanged();
+        selectedKpAdapter.notifyDataSetChanged();
+    }
+
+    /* --- Méthodes destinées à la gestion des erreurs et des succès --- */
     private void handleErrors(Throwable t) {
         handleError("SERVERSIDE BUG", "Erreur du côté serveur");
     }
@@ -608,4 +629,5 @@ public class PlanifyTravelActivity extends AppCompatActivity {
         KpListHolderPlanify.resetKeypoints();
         saveBtn.setEnabled(true);
     }
+    /* ---------------------------------------------------------------- */
 }

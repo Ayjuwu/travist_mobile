@@ -1,6 +1,5 @@
 package com.example.travist;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.content.Intent;
@@ -27,6 +26,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
+import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
@@ -46,31 +46,38 @@ import java.util.List;
 import java.util.Map;
 
 public class ModifyKeypointActivity extends AppCompatActivity {
+    // Initialisation des variables
+    private RequestQueue rq;
+    private String token = UserSession.getToken();
+    private int kpId;
+
     private static final int PICK_IMAGE = 1001;
 
-    private int kpId;
-    private EditText etName, etPrice, etStart, etEnd, etX, etY;
-    private Spinner spinnerCity;
-    private LinearLayout tagsContainer;
-    private Button btnAddTag, btnChooseImage, btnSave;
-    private ImageView ivCover;
-    private String base64Cover = "";
+    EditText etName, etPrice, etStart, etEnd, etX, etY;
+    Spinner spinnerCity;
+    LinearLayout tagsContainer;
+    Button btnAddTag, btnChooseImage, btnSave;
+    ImageView ivCover;
+    String base64Cover = "";
 
-    private List<City> cityList = new ArrayList<>();
-    private List<Tag> tagList   = new ArrayList<>();
-    private List<Spinner> tagSpinners = new ArrayList<>();
+    List<City> cityList = new ArrayList<>();
+    List<Tag> tagList = new ArrayList<>();
+    List<Spinner> tagSpinners = new ArrayList<>();
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_modify_keypoint);
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets b = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(b.left, b.top, b.right, b.bottom);
             return insets;
         });
+
+        // Initialisation de Volley
+        rq = Volley.newRequestQueue(this);
 
         kpId = getIntent().getIntExtra("kpId", -1);
         if (kpId < 0) {
@@ -118,7 +125,7 @@ public class ModifyKeypointActivity extends AppCompatActivity {
     }
 
     private void loadCities() {
-        String url = "http://10.0.2.2/www/PPE_Travist/travist/public/api/getCities";
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getCities";
         StringRequest req = new StringRequest(Request.Method.GET, url,
                 response -> {
                     try {
@@ -130,17 +137,23 @@ public class ModifyKeypointActivity extends AppCompatActivity {
                 },
                 error -> Toast.makeText(this, "Erreur villes", Toast.LENGTH_SHORT).show()
         ) {
-            @Override public Map<String, String> getHeaders() throws AuthFailureError {
-                return new HashMap<>();
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         };
-        Volley.newRequestQueue(this).add(req);
+
+        rq.add(req);
     }
 
     private void onCitiesLoaded(String resp) throws JSONException {
         JSONArray A = new JSONArray(resp);
         cityList.clear();
         List<String> names = new ArrayList<>();
+
         for(int i=0;i<A.length();i++){
             JSONObject o=A.getJSONObject(i);
 
@@ -166,16 +179,22 @@ public class ModifyKeypointActivity extends AppCompatActivity {
                 },
                 error -> Toast.makeText(this, "Erreur tags", Toast.LENGTH_SHORT).show()
         ) {
-            @Override public Map<String, String> getHeaders() throws AuthFailureError {
-                return new HashMap<>();
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         };
-        Volley.newRequestQueue(this).add(req);
+
+        rq.add(req);
     }
 
     private void onTagsLoaded(String resp) throws JSONException {
         JSONArray A = new JSONArray(resp);
         tagList.clear();
+
         for(int i=0;i<A.length();i++){
             JSONObject o=A.getJSONObject(i);
             if (o.getInt("id") != 0) {
@@ -207,15 +226,18 @@ public class ModifyKeypointActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int req,int res,Intent data) {
         super.onActivityResult(req,res,data);
-        if(req==PICK_IMAGE && res==Activity.RESULT_OK && data!=null){
-            try(InputStream is=getContentResolver().openInputStream(data.getData())){
+        if(req == PICK_IMAGE && res == Activity.RESULT_OK && data != null) {
+            try(InputStream is = getContentResolver().openInputStream(data.getData())) {
                 Bitmap bmp=BitmapFactory.decodeStream(is);
                 ivCover.setImageBitmap(bmp);
                 ivCover.setVisibility(View.VISIBLE);
+
                 ByteArrayOutputStream baos=new ByteArrayOutputStream();
                 bmp.compress(Bitmap.CompressFormat.JPEG,80,baos);
                 base64Cover=Base64.encodeToString(baos.toByteArray(),Base64.NO_WRAP);
-            }catch(Exception e){e.printStackTrace();}
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -232,12 +254,17 @@ public class ModifyKeypointActivity extends AppCompatActivity {
                     }
                 },
                 error -> Toast.makeText(this,"Erreur détail",Toast.LENGTH_SHORT).show()
-        ){
-            @Override public Map<String,String> getHeaders() throws AuthFailureError {
-                return new HashMap<>();
+        ) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         };
-        Volley.newRequestQueue(this).add(req);
+
+        rq.add(req);
     }
 
     private void onKpDetail(String resp) throws JSONException {
@@ -262,6 +289,7 @@ public class ModifyKeypointActivity extends AppCompatActivity {
             ivCover.setVisibility(View.VISIBLE);
             base64Cover = b64;
         }
+
         // String tagUrl = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getTagsByKeypoint/" + kpId;
         String tagUrl = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTagsByKeypoint/" + kpId;
         StringRequest tagReq = new StringRequest(Request.Method.GET, tagUrl,
@@ -273,12 +301,17 @@ public class ModifyKeypointActivity extends AppCompatActivity {
                     }
                 },
                 error -> {}
-        ){
-            @Override public Map<String,String> getHeaders() throws AuthFailureError {
-                return new HashMap<>();
+        ) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         };
-        Volley.newRequestQueue(this).add(tagReq);
+
+        rq.add(tagReq);
     }
 
     private void onPivotTags(String resp) throws JSONException {
@@ -300,7 +333,7 @@ public class ModifyKeypointActivity extends AppCompatActivity {
 
     private void sendUpdate() {
         try {
-            SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
             Date d1=sdf.parse(etStart.getText().toString()),
                     d2=sdf.parse(etEnd.getText().toString());
             if(d1.after(d2)){
@@ -309,10 +342,25 @@ public class ModifyKeypointActivity extends AppCompatActivity {
             }
         } catch(Exception e) {}
 
-        if(TextUtils.isEmpty(etName.getText())){ etName.setError("Obligatoire"); return; }
-        if(TextUtils.isEmpty(etPrice.getText())){ etPrice.setError("Obligatoire"); return; }
-        if(TextUtils.isEmpty(etStart.getText())){ etStart.performClick(); return; }
-        if(TextUtils.isEmpty(etEnd.getText())){ etEnd.performClick(); return; }
+        if (TextUtils.isEmpty(etName.getText())) {
+            etName.setError("Obligatoire");
+            return;
+        }
+
+        if(TextUtils.isEmpty(etPrice.getText())) {
+            etPrice.setError("Obligatoire");
+            return;
+        }
+
+        if(TextUtils.isEmpty(etStart.getText())) {
+            etStart.performClick();
+            return;
+        }
+
+        if(TextUtils.isEmpty(etEnd.getText())) {
+            etEnd.performClick();
+            return;
+        }
 
         JSONArray tagArr=new JSONArray();
         for(Spinner sp: tagSpinners){
@@ -343,13 +391,16 @@ public class ModifyKeypointActivity extends AppCompatActivity {
                     finish();
                 },
                 error -> Toast.makeText(this,"Erreur mise à jour",Toast.LENGTH_LONG).show()
-        ){
-            @Override public Map<String,String> getHeaders() throws AuthFailureError {
-                Map<String,String> h=new HashMap<>();
-                h.put("Content-Type","application/json; charset=UTF-8");
-                return h;
+        ) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         };
-        Volley.newRequestQueue(this).add(req);
+
+        rq.add(req);
     }
 }

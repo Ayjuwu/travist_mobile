@@ -12,19 +12,23 @@
 
     public class TagAdapter extends RecyclerView.Adapter<TagAdapter.ViewHolder> {
 
+        // Interface dédiée pour chaque élément de l'adapter
         public interface OnTagActionListener {
             void onModify(Tag tag);
             void onDelete(Tag tag);
         }
 
+        // Initialisation des variables
         private List<Tag> tags;
         private OnTagActionListener listener;
 
+        // Contructeur de l'adapter
         public TagAdapter(List<Tag> tags, OnTagActionListener listener) {
             this.tags = tags;
             this.listener = listener;
         }
 
+        // Méthode onCreateViewHolder pour la gestion du layout de l'item, en fonction de sa vue
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = LayoutInflater.from(parent.getContext())
@@ -32,6 +36,7 @@
             return new ViewHolder(view);
         }
 
+        // Méthode onBindViewHolder pour définir les attributs de l'item (vue + appel des méthodes du listener => interface)
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
             Tag tag = tags.get(position);
@@ -41,12 +46,14 @@
             holder.btnDelete.setOnClickListener(v -> listener.onDelete(tag));
         }
 
+        // Méthode pour retourner le nombre d'items dans l'adapter
         @Override
         public int getItemCount() {
             return tags.size();
         }
 
-        static class ViewHolder extends RecyclerView.ViewHolder {
+        // Classe ViewHolder pour définir et attribuer les éléments de la vue
+        public class ViewHolder extends RecyclerView.ViewHolder {
             TextView tvTagId, tvTagName;
             Button btnModify, btnDelete;
             ViewHolder(View item) {

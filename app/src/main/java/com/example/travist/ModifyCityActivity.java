@@ -25,14 +25,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ModifyCityActivity extends AppCompatActivity {
-
+    // Initialisation des variables
     private RequestQueue rq;
-    private EditText etCityName;
-    private EditText etCityCountryName;
-    String cityName;
-    String cityCountryName;
-    private Button btnSave;
+    private String token = UserSession.getToken();
     private int cityId;
+
+    EditText etCityName, etCityCountryName;
+    String cityName, cityCountryName;
+    Button btnSave;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,38 +40,33 @@ public class ModifyCityActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_modify_city);
 
-
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             return insets;
         });
 
-
+        // Initialisation de Volley
         rq = Volley.newRequestQueue(this);
 
-
+        // Initialisation de l'intent et récupération de ses attributs
         Intent i = getIntent();
-        cityId   = i.getIntExtra("cityId", -1);
+        cityId = i.getIntExtra("cityId", -1);
         String cityName = i.getStringExtra("cityName");
         String cityCountryName = i.getStringExtra("cityCountryName");
-        if (cityId == -1) {
-            Toast.makeText(this, "ID de ville invalide", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
 
         etCityName = findViewById(R.id.etCityName);
         etCityCountryName = findViewById(R.id.etCountryName);
         btnSave = findViewById(R.id.saveModifiedCity);
 
-
         etCityName.setText(cityName);
         etCityCountryName.setText(cityCountryName);
 
-        btnSave.setOnClickListener(v -> modifyCity());
+        // Appel du bouton pour modifier un voyage
+        btnSave.setOnClickListener(view -> modifyCity());
     }
 
+    // Méthode WebService pour modifier une ville
     private void modifyCity() {
         cityName = etCityName.getText().toString().trim();
         cityCountryName = etCityCountryName.getText().toString().trim();
@@ -88,9 +83,7 @@ public class ModifyCityActivity extends AppCompatActivity {
         }
 
         JsonObjectRequest req = new JsonObjectRequest(
-                Request.Method.POST,
-                url,
-                jsonBody,
+                Request.Method.POST, url, jsonBody,
                 response -> {
                     Toast.makeText(this, "Ville modifiée avec succès !", Toast.LENGTH_SHORT).show();
                     finish();
@@ -104,10 +97,11 @@ public class ModifyCityActivity extends AppCompatActivity {
                 }
         ) {
             @Override
-            public Map<String,String> getHeaders() throws AuthFailureError {
-                Map<String,String> hdrs = new HashMap<>();
-                hdrs.put("Content-Type","application/json; charset=UTF-8");
-                return hdrs;
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         };
 

@@ -23,12 +23,14 @@ public class SliderAdapter extends RecyclerView.Adapter<SliderAdapter.SliderView
         this.listener = listener;
     }
 
+    // Méthode onCreateViewHolder pour la gestion du layout de l'item, en fonction de sa vue
     @Override
     public SliderViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.kp_cover_item, parent, false);
         return new SliderViewHolder(itemView);
     }
 
+    // Méthode onBindViewHolder pour définir les attributs de l'item
     @Override
     public void onBindViewHolder(SliderViewHolder holder, int position) {
         SliderItem currentItem = sliderItems.get(position);
@@ -45,11 +47,13 @@ public class SliderAdapter extends RecyclerView.Adapter<SliderAdapter.SliderView
         });
     }
 
+    // Méthode pour retourner le nombre d'items dans l'adapter
     @Override
     public int getItemCount() {
         return sliderItems.size();
     }
 
+    // Classe ViewHolder pour définir et attribuer les éléments de la vue
     public static class SliderViewHolder extends RecyclerView.ViewHolder {
         ImageView imageView;
 
@@ -57,11 +61,6 @@ public class SliderAdapter extends RecyclerView.Adapter<SliderAdapter.SliderView
             super(itemView);
             imageView = itemView.findViewById(R.id.imageSlide);
         }
-    }
-
-    public void setFilteredList(List<SliderItem> filteredList) {
-        this.sliderItems = filteredList;
-        notifyDataSetChanged();
     }
 
     // Interface pour gérer le clic sur un item

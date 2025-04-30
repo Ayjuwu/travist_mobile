@@ -11,26 +11,27 @@ public class KeypointManager {
     // Private constructor pour empêcher l'instanciation
     private KeypointManager() {}
 
-    // Récupérer la liste des keypoints actuels
+    // On récupère la liste des lieux actuels
     public static List<Keypoint> getCurrentKeypoints() {
         return currentKeypoints;
     }
 
-    // Ajouter un keypoint à la liste
+    // On ajoute un lieu à la liste
     public static void addKeypoint(Keypoint keypoint) {
         currentKeypoints.add(keypoint);
     }
 
-    // Supprimer un keypoint de la liste
+    // On supprime un lieu de la liste
     public static void removeKeypoint(Keypoint keypoint) {
         currentKeypoints.remove(keypoint);
     }
 
-    // Vider la liste des keypoints
+    // On la liste des lieux
     public static void clearKeypoints() {
         currentKeypoints.clear();
     }
 
+    // Méthode pour ajouter les lieux
     public static void addKeypoints(List<Keypoint> keypoints) {
         if (keypoints != null) {
             for (Keypoint kp : keypoints) {

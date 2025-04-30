@@ -13,11 +13,9 @@ import java.util.List;
 public class TravelAdapter extends RecyclerView.Adapter<TravelAdapter.TravelViewHolder> {
 
     private List<Travel> travels;
-    private String token;
 
-    public TravelAdapter(List<Travel> travels, String token) {
+    public TravelAdapter(List<Travel> travels) {
         this.travels = travels;
-        this.token = token;
     }
 
     @Override
@@ -47,10 +45,9 @@ public class TravelAdapter extends RecyclerView.Adapter<TravelAdapter.TravelView
 
         void bind(Travel travel) {
             btnDetails.setText(travel.name);
-            btnDetails.setOnClickListener(v -> {
+            btnDetails.setOnClickListener(view -> {
                 Intent intent = new Intent(itemView.getContext(), TravelDetailsActivity.class);
                 intent.putExtra("currentTravel", travel);
-                intent.putExtra("token", token);
                 itemView.getContext().startActivity(intent);
             });
         }

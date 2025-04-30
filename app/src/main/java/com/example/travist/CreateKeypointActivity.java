@@ -26,6 +26,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
+import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
@@ -47,29 +48,37 @@ import java.util.List;
 import java.util.Map;
 
 public class CreateKeypointActivity extends AppCompatActivity {
+    // Initialisation des variables
+    private String token = UserSession.getToken();
+    private RequestQueue rq;
+
     private static final int PICK_IMAGE = 1001;
 
-    private EditText etName, etPrice, etStartDate, etEndDate, etX, etY;
-    private Spinner spinnerCity;
-    private LinearLayout tagsContainer;
-    private Button btnAddTag, btnChooseImage, btnSave;
-    private ImageView ivCover;
+    EditText etName, etPrice, etStartDate, etEndDate, etX, etY;
+    Spinner spinnerCity;
+    LinearLayout tagsContainer;
+    Button btnAddTag, btnChooseImage, btnSave;
+    ImageView ivCover;
 
-    private List<City> cityList = new ArrayList<>();
-    private List<Tag> tagList = new ArrayList<>();
-    private List<Spinner> tagSpinners = new ArrayList<>();
-    private String base64Cover = "";
+    List<City> cityList = new ArrayList<>();
+    List<Tag> tagList = new ArrayList<>();
+    List<Spinner> tagSpinners = new ArrayList<>();
+    String base64Cover = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_create_keypoint);
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets b = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(b.left, b.top, b.right, b.bottom);
             return insets;
         });
+
+        // Initialisation de Volley
+        rq = Volley.newRequestQueue(this);
 
         etName = findViewById(R.id.etKpName);
         etPrice = findViewById(R.id.etKpPrice);
@@ -88,18 +97,20 @@ public class CreateKeypointActivity extends AppCompatActivity {
         disableDirectInputAndShowPicker(etStartDate);
         disableDirectInputAndShowPicker(etEndDate);
 
-        // Charger villes & tags
+        // Appel des méthodes pour charger récupérer les villes et les tags
         loadCities();
         loadTags();
 
-        // Premier spinner de tag
+        // Ajout du premier select des tags
         addTagSpinner();
 
-        btnAddTag.setOnClickListener(v -> addTagSpinner());
-        btnChooseImage.setOnClickListener(v -> pickImage());
-        btnSave.setOnClickListener(v -> createKeypoint());
+        // Appel des boutons d'ajout d'un tag, de choix d'image et de création d'un lieu
+        btnAddTag.setOnClickListener(view -> addTagSpinner());
+        btnChooseImage.setOnClickListener(view -> pickImage());
+        btnSave.setOnClickListener(view -> createKeypoint());
     }
 
+    // Méthode pour désactiver les DatePicker
     private void disableDirectInputAndShowPicker(EditText et) {
         et.setInputType(0);
         et.setFocusable(false);
@@ -117,27 +128,34 @@ public class CreateKeypointActivity extends AppCompatActivity {
         });
     }
 
-    // Chargement des villes
+    // Méthode WebService pour récupérer les villes
     private void loadCities() {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getCities";
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getCities";
-        Volley.newRequestQueue(this).add(new StringRequest(Request.Method.GET, url,
+        rq.add(new StringRequest(Request.Method.GET, url,
                 this::onCitiesLoaded,
                 err -> Toast.makeText(this, "Erreur chargement villes", Toast.LENGTH_SHORT).show()
         ) {
-            @Override public Map<String, String> getHeaders() throws AuthFailureError {
-                return new HashMap<>();
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         });
     }
 
+    // Méthode WebService pour attribuer les villes chargées dans leur select
     private void onCitiesLoaded(String response) {
         try {
-            JSONArray arr = new JSONArray(response);
+            JSONArray jsonArray = new JSONArray(response);
             cityList.clear();
             List<String> names = new ArrayList<>();
-            for (int i=0; i<arr.length(); i++) {
-                JSONObject o = arr.getJSONObject(i);
+
+            for (int i=0; i < jsonArray.length(); i++) {
+                JSONObject o = jsonArray.getJSONObject(i);
+
                 if (o.getInt("id") != 0) {
                     cityList.add(new City(o.getInt("id"), o.getString("city_name"), o.getString("city_country")));
                     names.add(o.getString("city_name"));
@@ -152,20 +170,25 @@ public class CreateKeypointActivity extends AppCompatActivity {
         }
     }
 
-    // Chargement des tags
+    // Méthode WebService pour récupérer les tags
     private void loadTags() {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getTags";
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTags";
-        Volley.newRequestQueue(this).add(new StringRequest(Request.Method.GET, url,
+        rq.add(new StringRequest(Request.Method.GET, url,
                 this::onTagsLoaded,
                 err -> Toast.makeText(this, "Erreur chargement tags", Toast.LENGTH_SHORT).show()
         ) {
-            @Override public Map<String, String> getHeaders() throws AuthFailureError {
-                return new HashMap<>();
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         });
     }
 
+    // Méthode WebService pour attribuer les tags chargés dans leur select
     private void onTagsLoaded(String response) {
         try {
             JSONArray arr = new JSONArray(response);
@@ -184,6 +207,7 @@ public class CreateKeypointActivity extends AppCompatActivity {
         }
     }
 
+    // Méthode pour créer un nouveau select de tags
     private void addTagSpinner() {
         Spinner sp = new Spinner(this);
         populateTagSpinner(sp);
@@ -191,6 +215,7 @@ public class CreateKeypointActivity extends AppCompatActivity {
         tagSpinners.add(sp);
     }
 
+    // Méthode pour peupler le select des tags
     private void populateTagSpinner(Spinner spinner) {
         List<String> names = new ArrayList<>();
         for (Tag t : tagList) names.add(t.name);
@@ -200,21 +225,24 @@ public class CreateKeypointActivity extends AppCompatActivity {
         spinner.setAdapter(adapter);
     }
 
-    // Choix d'image et conversion Base64
+    // Méthode pour choisir l'image à uploader
     private void pickImage() {
         Intent i = new Intent(Intent.ACTION_GET_CONTENT);
         i.setType("image/*");
         startActivityForResult(i, PICK_IMAGE);
     }
 
+    // Méthode onActivityResult pour ajouter l'image uploadée lors du retour sur l'activité
     @Override
     protected void onActivityResult(int req, int res, Intent data) {
         super.onActivityResult(req, res, data);
-        if (req==PICK_IMAGE && res==Activity.RESULT_OK && data!=null) {
+
+        if (req == PICK_IMAGE && res == Activity.RESULT_OK && data != null) {
             try (InputStream is = getContentResolver().openInputStream(data.getData())) {
                 Bitmap bmp = BitmapFactory.decodeStream(is);
                 ivCover.setVisibility(View.VISIBLE);
                 ivCover.setImageBitmap(bmp);
+
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bmp.compress(Bitmap.CompressFormat.JPEG, 80, baos);
                 base64Cover = Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);
@@ -225,6 +253,7 @@ public class CreateKeypointActivity extends AppCompatActivity {
         }
     }
 
+    // Méthode WebService pour créer un nouveau lieu avec vérifications
     private void createKeypoint() {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -234,45 +263,59 @@ public class CreateKeypointActivity extends AppCompatActivity {
             d1 = sdf.parse(String.valueOf(etStartDate.getText()));
             d2 = sdf.parse(String.valueOf(etEndDate.getText()));
 
+            // Si les dates ne coincide pas (date de début après la fin), on interrompt le code et on renvoie une erreur
             if (d1.after(d2)) {
-                Toast.makeText(this, "Veuillez choisir une date de début avant la date de fin", Toast.LENGTH_SHORT).show(); return;
+                Toast.makeText(this, "Veuillez choisir une date de début avant la date de fin", Toast.LENGTH_SHORT).show();
+                return;
             }
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
 
+        // Si le nom du lieu est vide, on interrompt le code et on renvoie une erreur
         if (TextUtils.isEmpty(etName.getText())) {
-            etName.setError("Obligatoire"); etName.requestFocus(); return;
+            etName.setError("Obligatoire"); etName.requestFocus();
+            return;
         }
 
+        // Si le prix du lieu est vide, on interrompt le code et on renvoie une erreur
         if (TextUtils.isEmpty(etPrice.getText())) {
-            etPrice.setError("Obligatoire"); etPrice.requestFocus(); return;
+            etPrice.setError("Obligatoire"); etPrice.requestFocus();
+            return;
         }
 
+        // Si la date de début de visite du lieu est vide, on interrompt le code et on renvoie une erreur
         if (TextUtils.isEmpty(etStartDate.getText())) {
             Toast.makeText(this, "Veuillez choisir date de début", Toast.LENGTH_SHORT).show();
-            etStartDate.performClick(); return;
+            etStartDate.performClick();
+            return;
         }
 
+        // Si la date de fin de visite du lieu est vide, on interrompt le code et on renvoie une erreur
         if (TextUtils.isEmpty(etEndDate.getText())) {
             Toast.makeText(this, "Veuillez choisir date de fin", Toast.LENGTH_SHORT).show();
-            etEndDate.performClick(); return;
+            etEndDate.performClick();
+            return;
         }
 
+        // Si une ville n'est pas sélectionnée, on interrompt le code et on renvoie une erreur
         if (Spinner.INVALID_POSITION == spinnerCity.getSelectedItemPosition()) {
-            Toast.makeText(this, "Veuillez choisir une ville", Toast.LENGTH_SHORT).show(); return;
+            Toast.makeText(this, "Veuillez choisir une ville", Toast.LENGTH_SHORT).show();
+            return;
         }
 
+        // Si une image n'est pas uploadée, on interrompt le code et on renvoie une erreur
         if (base64Cover.isEmpty()) {
             Toast.makeText(this, "Veuillez sélectionner une image", Toast.LENGTH_SHORT).show();
-            btnChooseImage.performClick(); return;
+            btnChooseImage.performClick();
+            return;
         }
 
-        // tags
+        // Si au moins un tag n'est pas sélectionné, on interrompt le code et on renvoie une erreur
         JSONArray tagsArr = new JSONArray();
         for (Spinner sp : tagSpinners) {
             int pos = sp.getSelectedItemPosition();
-            if (pos<0) {
+            if (pos < 0) {
                 Toast.makeText(this, "Un tag n'est pas sélectionné", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -301,13 +344,15 @@ public class CreateKeypointActivity extends AppCompatActivity {
                     },
                     err -> Toast.makeText(this, "Erreur création : " + err.getMessage(), Toast.LENGTH_LONG).show()
             ) {
-                @Override public Map<String, String> getHeaders() throws AuthFailureError {
-                    Map<String,String> h = new HashMap<>();
-                    h.put("Content-Type","application/json; charset=UTF-8");
-                    return h;
+                @Override
+                public Map<String, String> getHeaders() throws AuthFailureError {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("Accept", "application/json");
+                    headers.put("Authorization", token);
+                    return headers;
                 }
             };
-            Volley.newRequestQueue(this).add(req);
+            rq.add(req);
 
         } catch (JSONException ex) {
             ex.printStackTrace();

@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
+
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -11,13 +12,17 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
+import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,37 +31,47 @@ import java.util.Map;
 import java.util.Set;
 
 public class KeypointsListActivity extends AppCompatActivity implements KeypointAllAdapter.OnKpActionListener {
-    private RecyclerView rvKeypoints;
-    private KeypointAllAdapter kpAdapter;
-    private List<Keypoint> kpList = new ArrayList<>();
-    private Map<Integer, Keypoint> pendingKeypoints = new HashMap<>();
-    private Set<Integer> tagsLoaded = new HashSet<>();
+    // Initialisation des variables
+    private RequestQueue rq;
+    private String token = UserSession.getToken();
 
-    private Map<Integer, String> cityMap = new HashMap<>();
-    private Map<Integer, String> tagMap = new HashMap<>();
-    private String defaultCityName = "Non-définie";
-    private String defaultTagName = "#NaN";
+    RecyclerView rvKeypoints;
+    KeypointAllAdapter kpAdapter;
+    List<Keypoint> kpList = new ArrayList<>();
+    Map<Integer, Keypoint> pendingKeypoints = new HashMap<>();
+    Set<Integer> tagsLoaded = new HashSet<>();
+
+    Map<Integer, String> cityMap = new HashMap<>();
+    Map<Integer, String> tagMap = new HashMap<>();
+    String defaultCityName = "Non-définie";
+    String defaultTagName = "#NaN";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_keypoints_list);
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             return insets;
         });
 
+        // Initialisation de Volley
+        rq = Volley.newRequestQueue(this);
+
+        // Initialisation de la RecyclerView et de l'Adapter
         rvKeypoints = findViewById(R.id.rvKeypoints);
         rvKeypoints.setLayoutManager(new LinearLayoutManager(this));
         kpAdapter = new KeypointAllAdapter(kpList, this);
         rvKeypoints.setAdapter(kpAdapter);
 
-        // charger d'abord les référentiels, puis les keypoints
+        // On appelle d'abord la récupération des villes, puis des lieux
         requestAllCities(() -> requestAllTags(this::requestKeypoints));
     }
 
+    // Méthode WebService pour récupérer tous les lieux
     private void requestKeypoints() {
         pendingKeypoints.clear();
         tagsLoaded.clear();
@@ -65,37 +80,45 @@ public class KeypointsListActivity extends AppCompatActivity implements Keypoint
 
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getKeypoints";
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getKeypoints";
-        Volley.newRequestQueue(this).add(
+        rq.add(
                 new StringRequest(Request.Method.GET, url,
                         this::processKeypoints,
-                        err -> handleError("Keypoints load error", "Erreur réseau")){
-                    @Override public Map<String,String> getHeaders() throws AuthFailureError { return new HashMap<>(); }
+                        err -> handleError("Keypoints load error", "Erreur réseau")
+                ){
+                    @Override
+                    public Map<String, String> getHeaders() throws AuthFailureError {
+                        Map<String, String> headers = new HashMap<>();
+                        headers.put("Accept", "application/json");
+                        headers.put("Authorization", token);
+                        return headers;
+                    }
                 }
         );
     }
 
+    // Méthode WebService procéder à la récupération de tous les lieux
     private void processKeypoints(String response) {
         try {
-            JSONArray arr = new JSONArray(response);
-            for (int i = 0; i < arr.length(); i++) {
-                JSONObject kpJson = arr.getJSONObject(i);
-                int id = kpJson.getInt("id");
-                Keypoint kp = new Keypoint(
-                        id,
-                        kpJson.getString("key_point_name"),
-                        (float) kpJson.getDouble("key_point_price"),
-                        kpJson.getString("key_point_start_date"),
-                        kpJson.getString("key_point_end_date"),
-                        kpJson.getString("key_point_cover"),
-                        (float) kpJson.getDouble("key_point_gps_x"),
-                        (float) kpJson.getDouble("key_point_gps_y"),
-                        kpJson.getInt("is_altered_keypoint"),
-                        kpJson.getInt("city_id")
-                );
+            JSONArray jsonArray = new JSONArray(response);
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject kp = jsonArray.getJSONObject(i);
 
-                // fallback city
-                kp.setCityName(cityMap.getOrDefault(kp.cityId, defaultCityName));
-                pendingKeypoints.put(id, kp);
+                int id = kp.getInt("id");
+                String kpName = kp.getString("key_point_name");
+                float kpPrice  = (float) kp.getDouble("key_point_price");
+                String kpStartDate = kp.getString("key_point_start_date");
+                String kpEndDate = kp.getString("key_point_end_date");
+                String kpCover = kp.getString("key_point_cover");
+                float kpX = (float) kp.getDouble("key_point_gps_x");
+                float kpY = (float) kp.getDouble("key_point_gps_y");
+                int is_altered = kp.getInt("is_altered_keypoint");
+                int cityId = kp.getInt("city_id");
+
+                Keypoint keypoint = new Keypoint(id, kpName, kpPrice, kpStartDate, kpEndDate, kpCover, kpX,
+                        kpY, is_altered, cityId);
+
+                keypoint.setCityName(cityMap.getOrDefault(keypoint.cityId, defaultCityName));
+                pendingKeypoints.put(id, keypoint);
                 tagsLoaded.remove(id);
 
                 requestTags(id);
@@ -105,16 +128,18 @@ public class KeypointsListActivity extends AppCompatActivity implements Keypoint
         }
     }
 
+    // Méthode WebService pour récupérer toutes les villes
     private void requestAllCities(Runnable next) {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getCities";
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getCities";
-        Volley.newRequestQueue(this).add(
+        rq.add(
                 new StringRequest(Request.Method.GET, url,
                         resp -> {
                             try {
-                                JSONArray arr = new JSONArray(resp);
-                                for (int i = 0; i < arr.length(); i++) {
-                                    JSONObject o = arr.getJSONObject(i);
+                                JSONArray jsonArray = new JSONArray(resp);
+                                for (int i = 0; i < jsonArray.length(); i++) {
+                                    JSONObject o = jsonArray.getJSONObject(i);
+
                                     int id = o.getInt("id");
                                     String name = o.getString("city_name");
                                     cityMap.put(id, name);
@@ -126,16 +151,23 @@ public class KeypointsListActivity extends AppCompatActivity implements Keypoint
                             }
                         },
                         err -> next.run()
-                ){
-                    @Override public Map<String, String> getHeaders() throws AuthFailureError { return new HashMap<>(); }
+                ) {
+                    @Override
+                    public Map<String, String> getHeaders() throws AuthFailureError {
+                        Map<String, String> headers = new HashMap<>();
+                        headers.put("Accept", "application/json");
+                        headers.put("Authorization", token);
+                        return headers;
+                    }
                 }
         );
     }
 
+    // Méthode WebService pour récupérer tous les tags
     private void requestAllTags(Runnable next) {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getTags";
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTags";
-        Volley.newRequestQueue(this).add(
+        rq.add(
                 new StringRequest(Request.Method.GET, url,
                         resp -> {
                             try {
@@ -153,16 +185,23 @@ public class KeypointsListActivity extends AppCompatActivity implements Keypoint
                             }
                         },
                         err -> next.run()
-                ){
-                    @Override public Map<String, String> getHeaders() throws AuthFailureError { return new HashMap<>(); }
+                ) {
+                    @Override
+                    public Map<String, String> getHeaders() throws AuthFailureError {
+                        Map<String, String> headers = new HashMap<>();
+                        headers.put("Accept", "application/json");
+                        headers.put("Authorization", token);
+                        return headers;
+                    }
                 }
         );
     }
 
+    // Méthode WebService pour récupérer tous les tags d'un lieu
     private void requestTags(int kpId) {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getTagsByKeypoint/" + kpId;
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTagsByKeypoint/" + kpId;
-        Volley.newRequestQueue(this).add(
+        rq.add(
                 new StringRequest(Request.Method.GET, url,
                         response -> {
                             Keypoint kp = pendingKeypoints.get(kpId);
@@ -190,12 +229,26 @@ public class KeypointsListActivity extends AppCompatActivity implements Keypoint
                                 // faute pivot tags
                             }
                         },
-                        err -> handleError("Tags load error", "Erreur réseau")){
-                    @Override public Map<String,String> getHeaders() throws AuthFailureError { return new HashMap<>(); }
+                        err -> handleError("Tags load error", "Erreur réseau")
+                ) {
+                    @Override
+                    public Map<String, String> getHeaders() throws AuthFailureError {
+                        Map<String, String> headers = new HashMap<>();
+                        headers.put("Accept", "application/json");
+                        headers.put("Authorization", token);
+                        return headers;
+                    }
                 }
         );
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        requestKeypoints();
+    }
+
+    // Méthode appelée dans l'adapter des lieux lorsque l'on modifie l'un d'entre-eux
     @Override
     public void onModify(Keypoint kp) {
         Intent i = new Intent(this, ModifyKeypointActivity.class);
@@ -203,23 +256,32 @@ public class KeypointsListActivity extends AppCompatActivity implements Keypoint
         startActivity(i);
     }
 
+    // Méthode appelée dans l'adapter des lieux lorsque l'on supprime l'un d'entre-eux
     @Override
     public void onDelete(Keypoint kp) {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/deleteKeypoint/" + kp.id;
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/deleteKeypoint/" + kp.id;
-        Volley.newRequestQueue(this).add(
+        rq.add(
                 new StringRequest(Request.Method.POST, url,
                         resp -> {
                             kpList.remove(kp);
                             kpAdapter.notifyDataSetChanged();
                             Toast.makeText(this, "Lieu supprimé", Toast.LENGTH_SHORT).show();
                         },
-                        err -> handleError("Delete error", "Erreur suppression")){
-                    @Override public Map<String,String> getHeaders() throws AuthFailureError { return new HashMap<>(); }
+                        err -> handleError("Delete error", "Erreur suppression")
+                ) {
+                    @Override
+                    public Map<String, String> getHeaders() throws AuthFailureError {
+                        Map<String, String> headers = new HashMap<>();
+                        headers.put("Accept", "application/json");
+                        headers.put("Authorization", token);
+                        return headers;
+                    }
                 }
         );
     }
 
+    // Méthode destinée à la gestion des erreurs
     private void handleError(String log, String toast) {
         Log.e("KeypointsList", log);
         Toast.makeText(this, toast, Toast.LENGTH_LONG).show();

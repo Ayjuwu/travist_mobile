@@ -29,10 +29,13 @@ import java.util.List;
 import java.util.Map;
 
 public class CitiesListActivity extends AppCompatActivity implements CityAdapter.OnCityActionListener {
-    RequestQueue rq;
+    // Initialisation des variables
+    private RequestQueue rq;
+    private String token = UserSession.getToken();
+
     RecyclerView rvTags;
     CityAdapter cityAdapter;
-    List<City> cityList;
+    List<City> cityList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,25 +48,28 @@ public class CitiesListActivity extends AppCompatActivity implements CityAdapter
             return insets;
         });
 
+        // Initialisation de Volley
         rq = Volley.newRequestQueue(this);
 
-        cityList = new ArrayList<>();
-
+        // Initialisation de la RecyclerView et de l'Adapter
         rvTags = findViewById(R.id.rvCities);
         rvTags.setLayoutManager(new LinearLayoutManager(this));
 
         cityAdapter = new CityAdapter(cityList, this);
         rvTags.setAdapter(cityAdapter);
 
+        // Appel pour récupérer toutes les villes
         requestCities();
     }
 
+    // Méthode onResume pour update la liste des villes en rappelant le WebService
     @Override
     protected void onResume() {
         super.onResume();
         requestCities();
     }
 
+    // Méthode WebService pour récupérer toutes les villes
     private void requestCities() {
         // String url = "http://192.168.0.110/www/PPE_Travist/travist/public/api/getCities";
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getCities";
@@ -71,13 +77,17 @@ public class CitiesListActivity extends AppCompatActivity implements CityAdapter
         StringRequest req = new StringRequest(Request.Method.GET, url, this::processCities, this::handleErrors) {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
-                return new HashMap<>();
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         };
 
         rq.add(req);
     }
 
+    // Méthode WebService pour procéder à la récupération de toutes les villes
     private void processCities(String response) {
         try {
             JSONArray jsonArray = new JSONArray(response);
@@ -103,6 +113,7 @@ public class CitiesListActivity extends AppCompatActivity implements CityAdapter
         }
     }
 
+    // Méthode appelée dans l'adapter des villes lorsque l'on modifie l'une d'entre-elles
     @Override
     public void onModify(City city) {
         Intent intent = new Intent(this, ModifyCityActivity.class);
@@ -112,6 +123,7 @@ public class CitiesListActivity extends AppCompatActivity implements CityAdapter
         startActivity(intent);
     }
 
+    // Méthode WebService appelée dans l'adapter des villes lorsque l'on supprime l'une d'entre-elles
     @Override
     public void onDelete(City city) {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/deleteCity/" + city.id;
@@ -123,10 +135,20 @@ public class CitiesListActivity extends AppCompatActivity implements CityAdapter
                     Toast.makeText(this, "Ville supprimée", Toast.LENGTH_SHORT).show();
                 },
                 error -> Toast.makeText(this, "Erreur suppression", Toast.LENGTH_SHORT).show()
-        );
+        ) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
+            }
+        };
+
         rq.add(req);
     }
 
+    /* --- Méthodes destinées à la gestion des erreurs et des succès --- */
     private void handleErrors(Throwable t) {
         handleError("SERVERSIDE BUG", "Erreur du côté serveur");
     }
@@ -135,4 +157,5 @@ public class CitiesListActivity extends AppCompatActivity implements CityAdapter
         Log.e("CitiesListActivity", logMessage);
         Toast.makeText(this, toastMessage, Toast.LENGTH_LONG).show();
     }
+    /* ---------------------------------------------------------------- */
 }

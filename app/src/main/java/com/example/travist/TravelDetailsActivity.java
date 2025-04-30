@@ -8,7 +8,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -25,7 +24,6 @@ import com.android.volley.toolbox.Volley;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.osmdroid.config.Configuration;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
@@ -37,16 +35,19 @@ import java.util.List;
 import java.util.Map;
 
 public class TravelDetailsActivity extends AppCompatActivity {
-    String token;
-    RequestQueue rq;
+    // Initialisation des variables
+    private RequestQueue rq;
+    private String token = UserSession.getToken();
+    private Travel currentTravel;
+
     TextView tvTravelName, tvNbPeople, tvIndividualPrice, tvTotalPrice, tvStartDate, tvEndDate;
     Button deleteTravelBtn, modifyTravelBtn;
     RecyclerView rvKpTravelDetails;
-    private MapView mapView;
-    private KeypointAdapter kpAdapter;
-    private Travel currentTravel;
 
-    private static final int REPLACE_KEYPOINT_REQUEST = 101;
+    MapView mapView;
+    KeypointAdapter kpAdapter;
+
+    // private static final int REPLACE_KEYPOINT_REQUEST = 101;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,8 +61,10 @@ public class TravelDetailsActivity extends AppCompatActivity {
             return insets;
         });
 
+        // Initialisation de Volley
         rq = Volley.newRequestQueue(this);
-        Configuration.getInstance().setUserAgentValue(getPackageName());
+
+        // Attribution de la MapView
         mapView = findViewById(R.id.mapView);
         mapView.setMultiTouchControls(true);
 
@@ -76,8 +79,8 @@ public class TravelDetailsActivity extends AppCompatActivity {
         deleteTravelBtn = findViewById(R.id.deleteTravelBtn);
         modifyTravelBtn = findViewById(R.id.modifyTravelBtn);
 
+        // Initialisation de l'intent et récupération de son attribut
         Intent intent = getIntent();
-        token = intent.getStringExtra("token");
         currentTravel = (Travel) intent.getSerializableExtra("currentTravel");
 
         tvTravelName.setText(currentTravel.name);
@@ -87,21 +90,26 @@ public class TravelDetailsActivity extends AppCompatActivity {
         tvStartDate.setText(currentTravel.startDate);
         tvEndDate.setText(currentTravel.endDate);
 
+        // Initialisation de la RecyclerView et de l'Adapter
         rvKpTravelDetails.setLayoutManager(new LinearLayoutManager(this));
         kpAdapter = new KeypointAdapter(this, KeypointManager.getCurrentKeypoints(), currentTravel.id);
         rvKpTravelDetails.setAdapter(kpAdapter);
 
+        // Appel pour récupérer tous les lieux liés au voyage
         fetchKeypointsForTravel(currentTravel.id);
 
+        // Appel du bouton pour supprimer le voyage
         deleteTravelBtn.setOnClickListener(view -> deleteTravel(currentTravel.id));
 
+        // Appel du bouton pour modifier le voyage
         modifyTravelBtn.setOnClickListener(view -> {
             Intent i = new Intent(this, ModifyTravelActivity.class);
-            i.putExtra("token", token);
             i.putExtra("currentTravel", currentTravel);
             startActivity(i);
         });
     }
+
+    // Méthode onResume pour mettre à jour les lieux du voyage et la map
     @Override
     public void onResume() {
         super.onResume();
@@ -109,22 +117,14 @@ public class TravelDetailsActivity extends AppCompatActivity {
         mapView.onResume();
     }
 
+    // Méthode onPause pour mettre en pause la vue de la map lorsque l'activité est en pause
     @Override
     public void onPause() {
         super.onPause();
         mapView.onPause();
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == REPLACE_KEYPOINT_REQUEST && resultCode == RESULT_OK) {
-            // Mise à jour visuelle après remplacement
-            fetchKeypointsForTravel(currentTravel.id);
-        }
-    }
-
+    // Méthode destinée à supprimer un voyage
     public void deleteTravel(int travelId) {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/deleteTravel/" + travelId;
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/deleteTravel/" + travelId;
@@ -145,14 +145,12 @@ public class TravelDetailsActivity extends AppCompatActivity {
         rq.add(req);
     }
 
+    // Méthode WebService pour procéder à la suppression du voyage
     public void processCurrentTravelDeletion(String response) {
         try {
             JSONObject json = new JSONObject(response);
             if (json.getBoolean("success")) {
                 Toast.makeText(this, "Voyage supprimé avec succès", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(this, Profile.class);
-                intent.putExtra("token", token);
-                startActivity(intent);
                 finish();
             } else {
                 Toast.makeText(this, "Erreur lors de la suppression", Toast.LENGTH_SHORT).show();
@@ -162,6 +160,7 @@ public class TravelDetailsActivity extends AppCompatActivity {
         }
     }
 
+    // Méthode WebService pour récupérer tous les lieux d'un voyage
     private void fetchKeypointsForTravel(int travelId) {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getKeypointsByTravel/" + travelId;
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getKeypointsByTravel/" + travelId;
@@ -188,13 +187,16 @@ public class TravelDetailsActivity extends AppCompatActivity {
                             int cityId = jo.optInt("city_id", 0);
                             String cityName = jo.getJSONObject("city").getString("city_name");
 
+                            // Création d'un nouveau lieu, définition du nom de ville et ajout dans le KeypointManager (Singleton)
                             Keypoint kp = new Keypoint(id, name, price, startDate, endDate, cover, gpsX, gpsY, is_altered, cityId);
                             kp.setCityName(cityName);
                             KeypointManager.addKeypoint(kp);
 
+                            // Initialisation des coordonnées sur la carte pour le lieu
                             GeoPoint point = new GeoPoint(kp.gpsX, kp.gpsY);
                             geoPoints.add(point);
 
+                            // Initialisation du marqueur et de l'ancre pour le lieu sur la carte
                             Marker marker = new Marker(mapView);
                             marker.setPosition(point);
                             marker.setTitle(kp.name);
@@ -202,17 +204,19 @@ public class TravelDetailsActivity extends AppCompatActivity {
                             mapView.getOverlays().add(marker);
                         }
 
+                        // Initialisation du Polyline pour tracer l'itinéraire entre les points de la carte
                         Polyline polyline = new Polyline();
                         polyline.setPoints(geoPoints);
                         mapView.getOverlays().add(polyline);
 
+                        // Si il y a au moins un point sur la carte, on prépare le zoom et la position par défaut
                         if (!geoPoints.isEmpty()) {
-                            mapView.getController().setZoom(12.0);
+                            mapView.getController().setZoom(4.0);
                             mapView.getController().setCenter(geoPoints.get(0));
                         }
 
-                        mapView.invalidate();
-                        kpAdapter.notifyDataSetChanged();
+                        mapView.invalidate(); // On rafraîchit la map
+                        kpAdapter.notifyDataSetChanged(); // Et on notifie l'adapter
 
                     } catch (JSONException e) {
                         Toast.makeText(this, "Erreur JSON", Toast.LENGTH_SHORT).show();
@@ -222,11 +226,20 @@ public class TravelDetailsActivity extends AppCompatActivity {
                 error -> {
                     Toast.makeText(this, "Erreur serveur", Toast.LENGTH_SHORT).show();
                     error.printStackTrace();
-                });
+                }) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
+            }
+        };
 
         rq.add(request);
     }
 
+    // Méthode WebService pour supprimer un lieu altéré
     public void onDeleteAlteredKeypoint(Keypoint kp) {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/deleteAssigned/" + currentTravel.id + "/" + kp.id;
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/deleteAssigned/" + currentTravel.id + "/" + kp.id;
@@ -240,13 +253,13 @@ public class TravelDetailsActivity extends AppCompatActivity {
                         if (success) {
                             JSONObject travelJson = json.getJSONObject("travel");
 
-                            // Mise à jour des informations du voyage
+                            // Mise à jour des informations du voyage (prix et dates)
                             currentTravel.individualPrice = (float) travelJson.getDouble("individual_price");
                             currentTravel.totalPrice = (float) travelJson.getDouble("total_price");
                             currentTravel.startDate = travelJson.optString("travel_start_date", "N/A");
                             currentTravel.endDate = travelJson.optString("travel_end_date", "N/A");
 
-                            // Mise à jour de l'UI
+                            // Mise à jour des TextViews
                             tvIndividualPrice.setText(String.format("%.2f €", currentTravel.individualPrice));
                             tvTotalPrice.setText(String.format("%.2f €", currentTravel.totalPrice));
                             tvStartDate.setText(currentTravel.startDate);
@@ -271,8 +284,8 @@ public class TravelDetailsActivity extends AppCompatActivity {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
                 Map<String, String> headers = new HashMap<>();
-                headers.put("Authorization", token);
                 headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
                 return headers;
             }
         };
@@ -280,6 +293,7 @@ public class TravelDetailsActivity extends AppCompatActivity {
         rq.add(request);
     }
 
+    // Méthode destinée à la gestion des erreurs
     public void handleErrors(Throwable t) {
         Toast.makeText(this, "Erreur serveur", Toast.LENGTH_LONG).show();
         Log.e("ERROR", "BUG", t);

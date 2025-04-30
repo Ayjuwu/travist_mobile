@@ -15,18 +15,20 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
 public class KeypointAdapter extends RecyclerView.Adapter<KeypointAdapter.ViewHolder> {
+    // Initialisation des variables
+    private List<Keypoint> keypoints;
+    private Context context;
+    private int travelId;
+    public int REQ_REPLACE_KP = 1001;
 
-    private final List<Keypoint> keypoints;
-    private final Context context;
-    private final int travelId;
-    public static final int REQ_REPLACE_KP = 1001;
-
+    // Constructeur de l'adapter
     public KeypointAdapter(Context context, List<Keypoint> keypoints, int travelId) {
         this.context = context;
         this.keypoints = keypoints;
         this.travelId = travelId;
     }
 
+    // Méthode onCreateViewHolder pour la gestion du layout de l'item, en fonction de sa vue
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -35,6 +37,7 @@ public class KeypointAdapter extends RecyclerView.Adapter<KeypointAdapter.ViewHo
         return new ViewHolder(view);
     }
 
+    // Méthode onBindViewHolder pour définir les attributs de l'item
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Keypoint kp = keypoints.get(position);
@@ -72,11 +75,13 @@ public class KeypointAdapter extends RecyclerView.Adapter<KeypointAdapter.ViewHo
         }
     }
 
+    // Méthode pour retourner le nombre d'items dans l'adapter
     @Override
     public int getItemCount() {
         return keypoints.size();
     }
 
+    // Classe ViewHolder pour définir et attribuer les éléments de la vue
     static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvKpName, tvKpDates, tvKpCity, tvKpTotalPrice, tvAlteredState;
         LinearLayout buttonsContainer;
@@ -92,17 +97,6 @@ public class KeypointAdapter extends RecyclerView.Adapter<KeypointAdapter.ViewHo
             buttonsContainer = itemView.findViewById(R.id.alteredButtonsContainer);
             btnDelete = itemView.findViewById(R.id.btnDeleteKp);
             btnModify = itemView.findViewById(R.id.btnModifyKp);
-        }
-    }
-
-    public void updateKeypoint(Keypoint updatedKeypoint) {
-        // Trouver la position du keypoint mis à jour dans la liste et update l'adapter
-        for (int i = 0; i < keypoints.size(); i++) {
-            if (keypoints.get(i).id == updatedKeypoint.id) {
-                keypoints.set(i, updatedKeypoint);
-                notifyItemChanged(i);
-                break;
-            }
         }
     }
 }

@@ -3,7 +3,6 @@ package com.example.travist;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -11,6 +10,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
@@ -20,38 +20,38 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class ReplaceKeypointActivity extends AppCompatActivity {
-    private static final int IMAGE_MAX_WIDTH = 800, IMAGE_MAX_HEIGHT = 600;
-
+    // Initialisation des variables
+    private RequestQueue rq;
+    private String token = UserSession.getToken();
+    private Keypoint replacement;
     private int travelId, oldKpId;
     private String oldStart, oldEnd;
     private double oldLat, oldLng;
 
-    private Keypoint replacement;
-    private RequestQueue rq;
-
-    private ImageView imgCover;
-    private TextView tvName, tvCity, tvDates, tvPrice;
-    private Button btnConfirmReplace, btnCancel;
-    private List<Keypoint> keypointList;
+    ImageView imgCover;
+    TextView tvName, tvCity, tvDates, tvPrice;
+    Button btnConfirmReplace, btnCancel;
+    List<Keypoint> keypointList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_replace_keypoint);
 
+        // Récupération des attributs de l'intent
         travelId = getIntent().getIntExtra("travelId", -1);
         oldKpId = getIntent().getIntExtra("oldKpId", -1);
         oldStart = getIntent().getStringExtra("oldStart");
         oldEnd = getIntent().getStringExtra("oldEnd");
         oldLat = getIntent().getDoubleExtra("oldGpsX", 0);
         oldLng = getIntent().getDoubleExtra("oldGpsY", 0);
-        keypointList = KeypointManager.getCurrentKeypoints();
+
+        keypointList = KeypointManager.getCurrentKeypoints(); // On attribue la liste à la liste du singleton avec le lieu actuel
 
         imgCover = findViewById(R.id.imgCover);
         tvName = findViewById(R.id.tvName);
@@ -61,11 +61,14 @@ public class ReplaceKeypointActivity extends AppCompatActivity {
         btnConfirmReplace = findViewById(R.id.btnConfirmReplace);
         btnCancel = findViewById(R.id.btnCancel);
 
+        // Initialisation de Volley
         rq = Volley.newRequestQueue(this);
 
+        // On appel la méthode pour récupérer le lieu le plus proche
         fetchNearestKeypoint();
 
-        btnConfirmReplace.setOnClickListener(v -> {
+        // Appel du bouton pour remplacer le lieu altéré
+        btnConfirmReplace.setOnClickListener(view -> {
             if (replacement != null) {
                 doReplaceAndReturn();
             } else {
@@ -73,9 +76,11 @@ public class ReplaceKeypointActivity extends AppCompatActivity {
             }
         });
 
-        btnCancel.setOnClickListener(v -> finish());
+        // Appel du bouton pour revenir en arrière
+        btnCancel.setOnClickListener(view -> finish());
     }
 
+    // Méthode pour récupérer le lieu le plus proche du lieu altéré
     private void fetchNearestKeypoint() {
         // String url  = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getNearestKeypointPosition/" + oldLat + "/" + oldLng + "/" + travelId;
         String url  = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getNearestKeypointPosition/" + oldLat + "/" + oldLng + "/" + travelId;
@@ -84,13 +89,9 @@ public class ReplaceKeypointActivity extends AppCompatActivity {
                 Request.Method.GET, url,
                 response -> {
                     try {
-                        // Afficher la réponse JSON brute dans le log
-                        Log.d("ReplaceKeypointActivity", "Response JSON: " + response);
+                        JSONObject jo = new JSONObject(response);
+                        replacement = parseKeypoint(jo);
 
-                        JSONObject o = new JSONObject(response);
-                        replacement = parseKeypoint(o);
-
-                        // MAJ UI
                         tvName.setText(replacement.name);
                         tvCity.setText(replacement.getCityName());
                         tvDates.setText(replacement.startDate + " - " + replacement.endDate);
@@ -108,13 +109,19 @@ public class ReplaceKeypointActivity extends AppCompatActivity {
                     Toast.makeText(this, "Erreur réseau getNearestKeypoint", Toast.LENGTH_SHORT).show();
                 }
         ) {
-            @Override public Map<String, String> getHeaders() {
-                return Collections.emptyMap();
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         };
+
         rq.add(req);
     }
 
+    // Méthode pour récupérer la ville liée à un lieu
     private void fetchCityForKeypoint(int keypointId) {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/getCityByKeypoint/" + keypointId;
         String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getCityByKeypoint/" + keypointId;
@@ -137,14 +144,19 @@ public class ReplaceKeypointActivity extends AppCompatActivity {
                     Toast.makeText(this, "Erreur réseau getCityByKeypoint", Toast.LENGTH_SHORT).show();
                 }
         ) {
-            @Override public Map<String, String> getHeaders() {
-                return Collections.emptyMap();
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         };
+
         rq.add(req);
     }
 
-
+    // Méthode pour charger l'image du lieu
     private void loadCoverImage(String base64String) {
         if (base64String == null || base64String.isEmpty()) {
             return;
@@ -160,6 +172,7 @@ public class ReplaceKeypointActivity extends AppCompatActivity {
         }
     }
 
+    // Méthode pour remplacer le lieu et modifier le voyage
     private void doReplaceAndReturn() {
         try {
             for (int i = 0; i < keypointList.size(); i++) {
@@ -173,15 +186,16 @@ public class ReplaceKeypointActivity extends AppCompatActivity {
 
             JSONObject payload = new JSONObject();
             payload.put("travel_id", travelId);
-            JSONArray ja = new JSONArray();
+            JSONArray jsonArray = new JSONArray();
+
             for (Keypoint kp : keypointList) {
-                JSONObject o = new JSONObject();
-                o.put("keypoint_id", kp.id);
-                o.put("start_date",  kp.startDate);
-                o.put("end_date",    kp.endDate);
-                ja.put(o);
+                JSONObject jo = new JSONObject();
+                jo.put("keypoint_id", kp.id);
+                jo.put("start_date", kp.startDate);
+                jo.put("end_date", kp.endDate);
+                jsonArray.put(jo);
             }
-            payload.put("keypoints", ja);
+            payload.put("keypoints", jsonArray);
 
             // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/updateAssigned/" + travelId;
             String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/updateAssigned/" + travelId;
@@ -201,12 +215,10 @@ public class ReplaceKeypointActivity extends AppCompatActivity {
                 @Override public byte[] getBody() {
                     return payload.toString().getBytes();
                 }
-                @Override public String getBodyContentType() {
-                    return "application/json; charset=UTF-8";
-                }
                 @Override public Map<String,String> getHeaders() {
                     Map<String,String> h = new HashMap<>();
-                    h.put("Content-Type","application/json; charset=UTF-8");
+                    h.put("Accept", "application/json");
+                    h.put("Authorization", token);
                     return h;
                 }
             };
@@ -217,19 +229,22 @@ public class ReplaceKeypointActivity extends AppCompatActivity {
         }
     }
 
-    private Keypoint parseKeypoint(JSONObject o) throws JSONException {
-        Keypoint kp = new Keypoint(
-                o.getInt("id"),
-                o.getString("key_point_name"),
-                (float)o.getDouble("key_point_price"),
-                o.getString("key_point_start_date"),
-                o.getString("key_point_end_date"),
-                o.optString("key_point_cover"),
-                (float)o.getDouble("key_point_gps_x"),
-                (float)o.getDouble("key_point_gps_y"),
-                o.getInt("is_altered_keypoint"),
-                o.getInt("city_id")
-        );
-        return kp;
+    // Méthode pour parser le lieu le plus proche et le retourner
+    private Keypoint parseKeypoint(JSONObject kp) throws JSONException {
+          int id = kp.getInt("id");
+          String kpName = kp.getString("key_point_name");
+          float kpPrice = (float)kp.getDouble("key_point_price");
+          String kpStartDate = kp.getString("key_point_start_date");
+          String kpEndDate = kp.getString("key_point_end_date");
+          String kpCover = kp.getString("key_point_cover");
+          float kpX = (float)kp.getDouble("key_point_gps_x");
+          float kpY = (float)kp.getDouble("key_point_gps_y");
+          int is_altered = kp.getInt("is_altered_keypoint");
+          int cityId = kp.getInt("city_id");
+
+          Keypoint keypoint = new Keypoint(id, kpName, kpPrice, kpStartDate, kpEndDate, kpCover, kpX,
+                  kpY, is_altered, cityId);
+
+          return keypoint;
     }
 }

@@ -16,25 +16,30 @@ import com.makeramen.roundedimageview.RoundedImageView;
 import java.util.List;
 
 public class KeypointAllAdapter extends RecyclerView.Adapter<KeypointAllAdapter.ViewHolder> {
+    // Interface dédiée pour chaque élément de l'adapter
     public interface OnKpActionListener {
         void onModify(Keypoint kp);
         void onDelete(Keypoint kp);
     }
 
+    // Initialisation des variables
     private List<Keypoint> keypoints;
     private KeypointAllAdapter.OnKpActionListener listener;
 
+    // Constructeur de l'adapter
     public KeypointAllAdapter(List<Keypoint> keypoints, KeypointAllAdapter.OnKpActionListener listener) {
         this.keypoints = keypoints;
         this.listener = listener;
     }
 
+    // Méthode onCreateViewHolder pour la gestion du layout de l'item, en fonction de sa vue
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.kp_item, parent, false);
         return new ViewHolder(view);
     }
 
+    // Méthode onBindViewHolder pour définir les attributs de l'item (vue + appel des méthodes du listener => interface)
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         Keypoint kp = keypoints.get(position);
@@ -43,11 +48,13 @@ public class KeypointAllAdapter extends RecyclerView.Adapter<KeypointAllAdapter.
         holder.btnDelete.setOnClickListener(v -> listener.onDelete(kp));
     }
 
+    // Méthode pour retourner le nombre d'items dans l'adapter
     @Override
     public int getItemCount() {
         return keypoints.size();
     }
 
+    // Classe ViewHolder pour définir et attribuer les éléments de la vue
     public class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvKpId;
         TextView tvKpName;

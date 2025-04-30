@@ -24,15 +24,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class CreateTagActivity extends AppCompatActivity {
+    // Initialisation des variables
     private RequestQueue rq;
-    private EditText etTagName;
-    private Button btnNewSave;
-    private String tagName;
+    private String token = UserSession.getToken();
+
+    EditText etTagName;
+    Button btnNewSave;
+    String tagName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
+
         setContentView(R.layout.activity_create_tag);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -40,16 +44,21 @@ public class CreateTagActivity extends AppCompatActivity {
             return insets;
         });
 
+        // Initialisation de Volley
         rq = Volley.newRequestQueue(this);
 
         etTagName = findViewById(R.id.etTagName);
 
+        // Appel du bouton pour créer un nouveau tag
         btnNewSave = findViewById(R.id.addTagBtn);
-        btnNewSave.setOnClickListener(v -> addTag());
+        btnNewSave.setOnClickListener(view -> addTag());
     }
 
+    // Méthode WebService pour créer un nouveau tag
     private void addTag() {
         tagName = etTagName.getText().toString().trim();
+
+        // Si le nom ne commence pas par "#", alors on le rajoute pour le traitement
         if (!tagName.startsWith("#")) {
             tagName = "#" + tagName;
         }
@@ -81,10 +90,11 @@ public class CreateTagActivity extends AppCompatActivity {
                 }
         ) {
             @Override
-            public Map<String,String> getHeaders() throws AuthFailureError {
-                Map<String,String> hdrs = new HashMap<>();
-                hdrs.put("Content-Type","application/json; charset=UTF-8");
-                return hdrs;
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         };
 

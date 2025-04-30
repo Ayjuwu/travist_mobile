@@ -25,11 +25,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ModifyTagActivity extends AppCompatActivity {
+    // Initialisation des variables
     private RequestQueue rq;
-    private EditText etTagName;
-    String tagName;
-    private Button btnSave;
+    private String token = UserSession.getToken();
     private int tagId;
+
+    EditText etTagName;
+    String tagName;
+    Button btnSave;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,20 +40,20 @@ public class ModifyTagActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_modify_tag);
 
-
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             return insets;
         });
 
-
+        // Initialisation de Volley
         rq = Volley.newRequestQueue(this);
 
-
+        // Initialisation de l'intent et récupération de ses attributs
         Intent i = getIntent();
-        tagId   = i.getIntExtra("tagId", -1);
+        tagId = i.getIntExtra("tagId", -1);
         String tagName = i.getStringExtra("tagName");
+
         if (tagId == -1) {
             Toast.makeText(this, "ID de tag invalide", Toast.LENGTH_SHORT).show();
             finish();
@@ -60,14 +63,17 @@ public class ModifyTagActivity extends AppCompatActivity {
         etTagName = findViewById(R.id.etTagName);
         btnSave = findViewById(R.id.saveModifiedTag);
 
-
         etTagName.setText(tagName);
 
-        btnSave.setOnClickListener(v -> modifyTag());
+        // Appel du bouton pour modifier un tag
+        btnSave.setOnClickListener(view -> modifyTag());
     }
 
+    // Méthode WebService pour modifier un tag
     private void modifyTag() {
         tagName = etTagName.getText().toString().trim();
+
+        // Si le nom ne commence pas par "#", alors on le rajoute pour le traitement
         if (!tagName.startsWith("#")) {
             tagName = "#" + tagName;
         }
@@ -99,10 +105,11 @@ public class ModifyTagActivity extends AppCompatActivity {
                 }
         ) {
             @Override
-            public Map<String,String> getHeaders() throws AuthFailureError {
-                Map<String,String> hdrs = new HashMap<>();
-                hdrs.put("Content-Type","application/json; charset=UTF-8");
-                return hdrs;
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
             }
         };
 

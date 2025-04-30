@@ -1,6 +1,5 @@
 package com.example.travist;
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -31,40 +30,60 @@ import java.util.List;
 import java.util.Map;
 
 public class Profile extends AppCompatActivity {
-    RequestQueue rq;
-    String token;
+
+    // Initialisation des variables
+    private RequestQueue rq;
+    private String token = UserSession.getToken();
+
     Button planifyBtn;
-    Button travelDetailsBtn;
-    RecyclerView recyclerView;
-    TravelAdapter adapter;
     List<Travel> travelList = new ArrayList<>();
 
-    @SuppressLint("MissingInflatedId")
+    RecyclerView recyclerView;
+    TravelAdapter travelAdapter;
+
+    TextView tvNoTravel;
+    ImageView ivNoTravel;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
-        rq = Volley.newRequestQueue(this);
-        Intent i = getIntent();
-        token = i.getStringExtra("token");
-        Log.i("HELLOJWT", "token " + token);
-        recyclerView = findViewById(R.id.recyclerView);
 
-        this.requestDetails();
+        // Initialisation de Volley
+        rq = Volley.newRequestQueue(this);
+
+        // Attribution de la RecyclerView + nouvelle instance de l'adapter pour les voyages
+        recyclerView = findViewById(R.id.recyclerView);
+        travelAdapter = new TravelAdapter(travelList);
+
+        // On set la RecyclerView dans cette activité et on y attribue l'adapter
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(travelAdapter);
+
+        // Appels du WebService pour les informations utilisateur +  listing des ses voyages
+        requestDetails();
+
+        // Attribution et appel du bouton de planification d'un nouveau voyage (listener)
         planifyBtn = findViewById(R.id.planifyTravelBtn);
-        planifyBtn.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View view) {
-                Intent intent = new Intent(Profile.this, PlanifyTravelActivity.class);
-                intent.putExtra("token", token);
-                startActivity(intent);
-            }
+        planifyBtn.setOnClickListener(view -> {
+            Intent intent = new Intent(this, PlanifyTravelActivity.class);
+            startActivity(intent);
         });
     }
 
-    public void requestDetails() {
+    // Méthode onResume pour actualiser les éléments de la vue au retour d'une activité
+    @Override
+    protected void onResume() {
+        super.onResume();
+        travelList.clear();
+        requestDetails();
+    }
 
+    // Méthode WebService pour récupérer les informations utilisateurs
+    private void requestDetails() {
         // String url = "http://192.168.0.110/~mathys.raspolini/travist/public/api/profile";
         String url="http://10.0.2.2/~mathys.raspolini/travist/public/api/profile";
+
         StringRequest req = new StringRequest(Request.Method.GET, url, this::processDetails, this::handleErrors) {
             public Map<String, String> getHeaders() throws AuthFailureError {
                 Map<String, String> params = new HashMap<String, String>();
@@ -76,8 +95,10 @@ public class Profile extends AppCompatActivity {
         rq.add(req);
     }
 
-    public void processDetails(String response) {
+    // Méthode WebService pour procéder à la récupération et l'attribution de l'utilisateur
+    private void processDetails(String response) {
         try {
+            // On initialise le JSONObject et sa data, et on y récupère l'objet data dans l'objet profile
             JSONObject joData = new JSONObject(response)
                     .getJSONObject("data")
                     .getJSONObject("profile")
@@ -87,40 +108,50 @@ public class Profile extends AppCompatActivity {
             String userName = joData.getString("user_name");
             int userId = joData.getInt("id");
 
-            // Stocker dans le UserSession
-            UserSession session = UserSession.getInstance();
-            session.setUserId(userId);
-            session.setUserName(userName);
-            session.setToken(token);
+            // On définit aussi l'id user dans le UserSession grâce à la requête WebService
+            UserSession.setUserId(userId);
 
-            // Mise à jour de l'interface utilisateur
+            // Attribution des données dans le TextView de la vue
             TextView tvPs = findViewById(R.id.tvPseudo);
             tvPs.setText(userName);
 
-            // Appel pour récupérer les voyages, en utilisant userId
-            // String url="http://192.168.0.110/~mathys.raspolini/travist/public/api/getTravelsByUser/" + userId;
-            String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTravelsByUser/" + userId;
-            StringRequest req = new StringRequest(Request.Method.GET, url, this::processUserTravels, this::handleErrors) {
-                @Override
-                public Map<String, String> getHeaders() throws AuthFailureError {
-                    return new HashMap<>();
-                }
-            };
-
-            rq.add(req);
+            requestUserTravels();
         } catch (JSONException x) {
             Toast.makeText(this, "JSON PARSE ERROR", Toast.LENGTH_LONG).show();
             Log.e("HELLOJWT", "JSON PARSE ERROR: " + response, x);
         }
     }
 
-    public void processUserTravels(String response) {
+    private void requestUserTravels() {
+        // String url="http://192.168.0.110/~mathys.raspolini/travist/public/api/getTravelsByUser/" + userId;
+        String url = "http://10.0.2.2/~mathys.raspolini/travist/public/api/getTravelsByUser/" + UserSession.getUserId();
+
+        // Appel pour récupérer les voyages de l'utilisateur (pas besoin de HashMap ici)
+        StringRequest req = new StringRequest(Request.Method.GET, url, this::processUserTravels, this::handleErrors
+        ) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Authorization", token);
+                return headers;
+            }
+        };
+
+        rq.add(req);
+    }
+
+    // Méthode WebService pour procéder à la récupératon des voyages de l'utilisateur
+    private void processUserTravels(String response) {
         try {
+            // On récupère le tableau JSON retourné puisqu'il s'agit d'un tableau de voyages
             JSONArray jsonArray = new JSONArray(response);
 
-            TextView tvNoTravel = findViewById(R.id.noTravelTextView);
-            ImageView ivNoTravel = findViewById(R.id.noTravelImageView);
+            // Attribution des UI liées aux voyages
+            tvNoTravel = findViewById(R.id.noTravelTextView);
+            ivNoTravel = findViewById(R.id.noTravelImageView);
 
+            // Si l'utilisateur n'a aucun voyage, alors on attribue un texte par défaut au TextView, et on met une image par défaut au lieu du listing
             if (jsonArray.length() == 0) {
                 tvNoTravel.setText("Vous n'avez aucun trajet planifié");
                 ivNoTravel.setImageResource(R.drawable.no_travel_icon);
@@ -129,10 +160,10 @@ public class Profile extends AppCompatActivity {
                 tvNoTravel.setVisibility(View.VISIBLE);
                 ivNoTravel.setVisibility(View.VISIBLE);
 
-                // Modifier la taille de l'icône
+                // Modifier la taille de l'image
                 ViewGroup.LayoutParams params = ivNoTravel.getLayoutParams();
-                params.width = 600; // Ajuster à ta taille souhaitée
-                params.height = 400; // Ajuster à ta taille souhaitée
+                params.width = 600; // Ajuster la largeur souhaitée
+                params.height = 400; // Ajuster la hauteux souhaitée
                 ivNoTravel.setLayoutParams(params);
             } else {
                 // On cache le message et l'icône si des voyages existent
@@ -142,6 +173,7 @@ public class Profile extends AppCompatActivity {
                 // On vide la liste au cas où il y aurait déjà des données
                 travelList.clear();
 
+                // Pour chaque élément du tableau JSON, on extrait les valeurs, puis on crée un nouvel Objet voyage qu'on ajoute à la liste pour la RecyclerView
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject travel = jsonArray.getJSONObject(i);
 
@@ -159,12 +191,8 @@ public class Profile extends AppCompatActivity {
                     travelList.add(t);
                 }
 
-                // Mettre à jour la RecyclerView sur le thread principal (mieux que thread de fond).
-                runOnUiThread(() -> {
-                    adapter = new TravelAdapter(travelList, token);
-                    recyclerView.setLayoutManager(new LinearLayoutManager(this));
-                    recyclerView.setAdapter(adapter);
-                });
+                // Mettre à jour la RecyclerView en notifiant l'adapter
+                travelAdapter.notifyDataSetChanged();
             }
         } catch (JSONException e) {
             Toast.makeText(this, "JSON PARSE ERROR", Toast.LENGTH_LONG).show();
@@ -172,6 +200,7 @@ public class Profile extends AppCompatActivity {
         }
     }
 
+    // Méthode destinée à la gestion des erreurs
     public void handleErrors(Throwable t) {
         Toast.makeText(this, "SERVERSIDE PROBLEM", Toast.LENGTH_LONG).show();
         Log.e("HELLOJWT", "SERVERSIDE BUG", t);
